@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+</head>
+<body>
+    <form method="post" id="consult">
+        <input type="text" name="consult_input" placeholder="Escreva sua consulta aqui">
+        <button type="submit">Enviar</button>
+    </form>
+    <button onclick={getbancodedados()}>Clique para listar as relações</button>
+    <div class="root">
+        <div id="resultado" class="resultado">
+            <h2>Resultados</h2>
+        </div>
+        <div class="bd">
+            <h2>Relações</h2>
+            <div class="relations" id="relations"></div>
+        </div>
+    </div>
+</body>
+<script>
+  document.getElementById('consult').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var formdata = new FormData(this);
+    fetch('/consult', {
+        method: 'POST',
+        body: formdata  
+    }).then(
+        response => {
+            if (!response.ok) {
+                throw new Error('Erro na requisição');
+            } else {
+                console.log(response)
+                return response.json();
+            }
+        }
+    ).then(data => {
+        console.log(data)
+        var resultadoHTML = '<ul>';
+                for(element of data){
+                    resultadoHTML += '<li>' + element + '</li>';
+                }
+            resultadoHTML += '</ul>';
+            document.getElementById('resultado').innerHTML = resultadoHTML;
+        }).catch(error => {
+            console.log(error);
+    }).catch(error => {
+        console.log(error);
+    });
+});
+
+function getbancodedados(){
+    fetch('/list', {
+        method: 'GET'
+    }).then(
+        response => {
+            if (!response.ok) {
+                throw new Error('Erro na requisição');
+            } else {
+                console.log(response)
+                return response.json();
+            }
+        }).then(data => {
+            console.log(data)
+            let resultadoHTML = ''
+                for(let element of data){
+                    let textoSemTracos = element.replace(/\d+ tuples returned|-+/g, '');
+                    resultadoHTML += '<pre>' + textoSemTracos + '</pre>';
+                }
+            document.getElementById('relations').innerHTML = resultadoHTML;
+        }).catch(error => {
+            console.log(error);
+    }).catch(error => {
+        console.log(error);
+    });
+}
+
+</script>
+</html>

@@ -1,0 +1,36 @@
+.root {
+    display: flex;
+    width: 100%;
+    flex-direction: row;
+    height: 100vh;
+    justify-content: center;
+}
+
+.resultado {
+    width: 60%;
+}
+
+.bd {
+    width: 40%;
+    height: 40vh;
+    overflow: auto; /* Use 'auto' para mostrar a barra de rolagem somente quando necessário */
+    position: relative; /* Importante para manter o título e o conteúdo em posição correta */
+}
+
+.bd > h2 {
+    position: sticky; 
+    top: 0; 
+    z-index: 1; 
+    padding: 1em;
+    background-color: #fff;
+}
+
+.relations {
+    display: flex;
+    flex-direction: column; 
+    
+}
+
+.relations pre {
+    padding-left: 6em;
+}

@@ -8,16 +8,16 @@ from radb.ast import Context, ValidationError, ExecutionError
 from radb.views import ViewCollection
 from radb.parse import one_statement_from_string, ParsingError
 import getpass
+from io import StringIO
+import sys
 
 import logging
 logger = logging.getLogger('ra')
 
-
 class RA:
+    
+    def __init__(self):
 
-    def config_inicial(self):
-
-        # read system defaults:
         sys_configfile = os.path.join(os.path.dirname(
             os.path.abspath(__file__)), 'sys.ini')
         sys_config = configparser.ConfigParser()
@@ -72,18 +72,8 @@ class RA:
         except Exception as e:
             logger.error('failed to connect to database: {}'.format(e))
             sys.exit(1)
-
-        # construct context (starting with empty view collection):
-        self.context = Context(configured, db, check, ViewCollection())
-
-        # Conectar ao banco de dados
-        try:
-            db = DB(defaults)
-        except Exception as e:
-            print('Failed to connect to the database:', e)
-            sys.exit(1)
-
-        # Inicializar o sistema de verificação de tipos
+            
+          # Inicializar o sistema de verificação de tipos
         try:
             check = ValTypeChecker(
                 configured['default_functions'], configured.get('functions', None))
@@ -91,20 +81,21 @@ class RA:
             print('Failed to initialize type checker:', e)
             sys.exit(1)
 
-        # Criar o contexto de execução
-        self.context = Context(defaults, db, check, ViewCollection())
+        # construct context (starting with empty view collection):
+        self.context = Context(configured, db, check, ViewCollection())
 
     def executa_consulta_ra(self, query):
-
-        # Analisar, validar e executar a consulta
+        output = StringIO()
+        sys.stdout = output
         try:
             ast = one_statement_from_string(query)
             logger.info('statement parsed:')
             logger.info(str(ast))
             ast.validate(self.context)
             logger.info('statement validated:')
-            ast.execute(self.ontext)
-            result = ast.execute(self.context)
-            return result
+            ast.execute(self.context)
+            return output.getvalue()
         except (ParsingError, ValidationError, ExecutionError) as e:
             print('Error executing query:', e)
+        finally:
+         sys.stdout = sys.__stdout__
