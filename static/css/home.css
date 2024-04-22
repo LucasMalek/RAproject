@@ -3,18 +3,18 @@
     width: 100%;
     flex-direction: row;
     height: 100vh;
-    justify-content: center;
 }
 
-.resultado {
+.consult_environment {
     width: 60%;
+    height: 40vh;
 }
 
 .bd {
     width: 40%;
     height: 40vh;
-    overflow: auto; /* Use 'auto' para mostrar a barra de rolagem somente quando necessário */
-    position: relative; /* Importante para manter o título e o conteúdo em posição correta */
+    overflow: auto; 
+    position: relative; 
 }
 
 .bd > h2 {
@@ -28,9 +28,108 @@
 .relations {
     display: flex;
     flex-direction: column; 
-    
+    width: 100%;
+    height: 100%;
 }
 
 .relations pre {
     padding-left: 6em;
 }
+
+.consult_form {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+}
+
+.consult_environment > h2 {
+    padding: 1em;
+}
+
+.consult_input {
+    width: 100%;
+    display: none;
+}
+
+.consult_interface {
+    display: flex;
+    width: 100%; 
+    height: 150px; 
+    border-radius: 5px; 
+    font-family: Arial, sans-serif; 
+    font-size: 14px; 
+    line-height: 1.5; 
+    overflow-y: auto; 
+    resize: vertical; 
+}
+
+.operator-symbol {
+    font-size: 4em;
+    display: flex;
+    width: 40%;
+    height: 100%; /* Garante que o texto ocupe toda a altura do operator-container */
+    position: relative;
+    align-items: center;
+}
+
+.input-atributes {
+    position: absolute;
+    bottom: 0px;
+    left: 2em; 
+    width: auto; 
+    box-sizing: border-box; 
+    border-radius: 2px;
+    border-width: 0px;
+    border-color: #ccc;
+    outline: none;
+}
+
+.operator-container {
+    display: flex; 
+    align-items: center; 
+    width: fit-content;
+    height: 6em;
+    position: relative;
+}
+
+.relationArea {
+    display: flex;
+    justify-content: space-between; 
+    align-items: center; 
+    height: 3em;
+    width: 100%;
+}
+
+.relationArea > span:first-child{
+    font-size: 2.5em;
+}
+
+.relationArea > span:last-child {
+    font-size: 2.5em;
+    margin-left: auto;
+}
+
+.keyboard {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+}
+
+.keyboard button {
+    height: 2em;
+}
+
+.simple_relation {
+    display: flex;
+    outline: none;
+    border: none;
+    font-size: 2.5em;
+    text-align: center;
+    width: 100%;
+}
+
+.complex_relation {
+    width: 100%;
+}
+

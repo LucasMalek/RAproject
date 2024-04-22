@@ -7,34 +7,146 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
 </head>
 <body>
-    <form method="post" id="consult">
-        <input type="text" name="consult_input" placeholder="Escreva sua consulta aqui">
-        <button type="submit">Enviar</button>
-    </form>
-    <button onclick={getbancodedados()}>Clique para listar as relações</button>
     <div class="root">
-        <div id="resultado" class="resultado">
+        <div class="consult_environment">
             <h2>Resultados</h2>
+            <button onclick={getbancodedados()}>Clique para listar as relações</button>
+            <div class="keyboard">
+                <button onclick='operator_impression("\u03C3")'>&sigma;</button>
+                <button onclick='operator_impression("\u03C0")'>&Pi;</button>
+                <button onclick='operator_impression("\u222A")'>&Union;</button>
+                <button onclick='operator_impression("\u2212")'>-</button>
+                <button onclick='operator_impression("\u2715")'>×</button>
+                <button onclick='operator_impression("\u22C8")'>⋈</button>
+                <button onclick='operator_impression("\u00F7")'>÷</button>
+            </div>
+            <form method="post" id="consult" class="consult_form">
+                <button type="button" onclick="pegar()">pegar</button>
+                <div class="consult_interface" contenteditable="true"></div>
+                <button type="submit">Enviar</button>
+            </form>
+            <div id="result"></div>
         </div>
         <div class="bd">
             <h2>Relações</h2>
-            <div class="relations" id="relations"></div>
+            <div class="relations" id="relations_impression"></div>
         </div>
     </div>
 </body>
 <script>
-  document.getElementById('consult').addEventListener('submit', function(e) {
+
+let operators = [];
+
+function createOperatorContainer(operator) {
+    const operatorContainer = document.createElement('div');
+    operatorContainer.classList.add('operator-container');
+
+    const operatorElement = document.createElement('div');
+    operatorElement.setAttribute('class', 'operator-symbol');
+    operatorElement.textContent = operator;
+
+    const input_atributes = document.createElement('input');
+    input_atributes.setAttribute('placeholder', 'Atr1: valor, ...');
+    input_atributes.setAttribute('class', 'input-atributes');
+
+    const attributeValueContainer = document.createElement('div');
+    attributeValueContainer.classList.add('attribute-value-container');
+
+    const relationArea = document.createElement('div');
+    relationArea.classList.add('relationArea');
+
+    const parenteses_1 = document.createElement('span');
+    parenteses_1.textContent = '(';
+
+    const parenteses_2 = document.createElement('span');
+    parenteses_2.textContent = ')';
+
+    let relation = document.createElement('input');
+    relation.classList.add('simple_relation');
+    relation.setAttribute('placeholder', 'R');
+    
+    relationArea.appendChild(parenteses_1);
+    relationArea.appendChild(relation);
+    relationArea.appendChild(parenteses_2);
+
+    attributeValueContainer.appendChild(input_atributes);
+    operatorElement.appendChild(attributeValueContainer);
+    operatorContainer.appendChild(operatorElement);
+    operatorContainer.appendChild(relationArea);
+
+    return operatorContainer;
+}
+
+function addOperator(operator) {
+    const newOperator = {
+        operator: operator,
+        relation: null,
+        atributes_values: null
+    }
+
+    let container;
+
+    if (operators.length > 0) {
+        const lastOperatorContainer = document.querySelector('.operator-container:last-child');
+        const container = lastOperatorContainer.querySelector('.simple_relation');
+        if (container) {
+            const complex_input = document.createElement('div');
+            complex_input.classList.add('complex_relation');
+            complex_input.contentEditable = "true";
+            container.parentNode.replaceChild(complex_input, container);
+            complex_input.appendChild(createOperatorContainer(operator));
+        } else {
+            console.error("Não foi possível encontrar o elemento .simple_relation dentro do último operador.");
+            return;
+        }
+    } else {
+        container = document.querySelector('.consult_interface');
+        container.appendChild(createOperatorContainer(operator));
+    }
+
+    operators.push(newOperator);
+    
+    operatorsContainers = document.querySelectorAll('.operator-container')
+    operatorsContainers.forEach((operatorContainer, index) => {
+        let inputAttributes = operatorContainer.querySelector('.input-atributes');
+        let complexRelation = operatorContainer.querySelector('.complex_relation');
+    
+        if (inputAttributes) {
+            inputAttributes.addEventListener('input', function() {
+                operators[index].atributes_values = this.value;
+            });
+        }
+
+        if(complexRelation) {
+            operators[index].relation = null
+
+        }else {
+            let simpleRelation = operatorContainer.querySelector('.simple_relation');
+            if (simpleRelation) {
+                simpleRelation.addEventListener('input', function() {
+                    operators[index].relation = this.value;
+                });
+            }
+        }
+          
+    });
+
+
+}
+
+document.getElementById('consult').addEventListener('submit', function(e) {
     e.preventDefault();
-    var formdata = new FormData(this);
     fetch('/consult', {
         method: 'POST',
-        body: formdata  
+        headers: {
+            'Content-Type': 'application/json'
+          },
+        body: JSON.stringify(operators)  
     }).then(
         response => {
             if (!response.ok) {
                 throw new Error('Erro na requisição');
             } else {
-                console.log(response)
                 return response.json();
             }
         }
@@ -45,7 +157,7 @@
                     resultadoHTML += '<li>' + element + '</li>';
                 }
             resultadoHTML += '</ul>';
-            document.getElementById('resultado').innerHTML = resultadoHTML;
+            document.getElementById('result').innerHTML = resultadoHTML;
         }).catch(error => {
             console.log(error);
     }).catch(error => {
@@ -65,13 +177,14 @@ function getbancodedados(){
                 return response.json();
             }
         }).then(data => {
-            console.log(data)
+            const [bd, labelsData] = data
+            labels = labelsData
             let resultadoHTML = ''
-                for(let element of data){
+                for(let element of bd){
                     let textoSemTracos = element.replace(/\d+ tuples returned|-+/g, '');
                     resultadoHTML += '<pre>' + textoSemTracos + '</pre>';
                 }
-            document.getElementById('relations').innerHTML = resultadoHTML;
+            document.getElementById('relations_impression').innerHTML = resultadoHTML;
         }).catch(error => {
             console.log(error);
     }).catch(error => {
@@ -79,5 +192,14 @@ function getbancodedados(){
     });
 }
 
+
+function pegar() {
+    console.log(operators)
+    console.log(document.querySelectorAll('.operator-container'))
+}
+
+function operator_impression(operator) {
+    addOperator(operator);
+}
 </script>
 </html>
