@@ -14,9 +14,10 @@ import sys
 import logging
 logger = logging.getLogger('ra')
 
+
 class RA:
-    
-    def __init__(self):
+
+    def __init__(self, db_file_name=None):
 
         sys_configfile = os.path.join(os.path.dirname(
             os.path.abspath(__file__)), 'sys.ini')
@@ -67,12 +68,14 @@ class RA:
         # connect to database:
         if 'db.database' not in configured:
             logger.warning('no database specified')
+        if db_file_name is not None:
+            configured['db.database'] = db_file_name
         try:
             db = DB(configured)
         except Exception as e:
             logger.error('failed to connect to database: {}'.format(e))
             sys.exit(1)
-            
+
           # Inicializar o sistema de verificação de tipos
         try:
             check = ValTypeChecker(
@@ -98,4 +101,4 @@ class RA:
         except (ParsingError, ValidationError, ExecutionError) as e:
             print('Error executing query:', e)
         finally:
-         sys.stdout = sys.__stdout__
+            sys.stdout = sys.__stdout__
