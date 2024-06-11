@@ -1,0 +1,355 @@
+.maincontainer {
+    margin: 0px;
+    padding: 0px;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh; 
+    align-items: center;
+    justify-content: center;
+    background-color: #3B3176;
+    background-size: cover;
+    background-position: center;
+  }
+
+  .contentcontainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    transition: opacity 1s ease-in-out;
+  }
+ 
+  .topbar {
+    width: 100%;
+    height: 7%;
+    background-color: #CBCACE;
+    text-align: center;
+    color: #756F9E;
+    position: fixed; 
+    top: 0;
+    left: 0;
+    z-index: 1000; 
+    border-bottom: 2px solid black; 
+    box-shadow: 0 0 5px rgba(115, 115, 177, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.saibamais{
+    margin: 0px;
+    padding: 0px;
+    width: 100%;
+    height: 100vh; 
+    background-image: linear-gradient(  #3B3176 , rgb(115, 115, 177));
+}
+
+.userchoicecontainer {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background-image: linear-gradient(rgb(48, 48, 116), rgb(115, 115, 177), rgb(163, 163, 219));
+  }
+  
+h2 {
+    color:  #CBCACE;
+    text-shadow: 0 0 2px rgba(255, 255, 255, 0.3);
+}
+
+#logo {
+    width: 22%;
+    height: 32%;
+}
+
+.content-fading-out {
+  opacity: 0;
+}
+
+.content-fading-in {
+  opacity: 1 !important;
+}
+
+.maincontentborder {
+  border-width: 3px;
+  border-color: rgb(115, 115, 177);
+  border-radius: 10px;
+  box-shadow: 0 0 5px rgb(248, 248, 250);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 90%;
+  flex-grow: 1;
+  margin-top: 5em;
+  margin-bottom: 1.7em;
+}
+
+.consultcontainer {
+  display: flex;
+  flex-direction: row;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  transition: opacity 1s ease-in-out;
+}
+
+.keyboard {
+  height: 10%;
+  width: 100%;
+  align-items: flex-end;
+  flex-direction: row;
+}
+
+.keyboard button {
+  height: 65%;
+  width: 5%;
+  background-color: white;
+  font-size: large;
+  cursor: pointer;
+  border-bottom: none;
+  border-color: grey;
+}
+
+.consult_environment {
+ display: none;
+ flex-direction: column;
+ width: 70%;
+ margin-right: 2%;
+ height: 95%;
+ margin-top: 1%;
+ align-items: center;
+ justify-content: center;
+}
+
+.consult_form {
+  flex-direction: column;
+  flex-grow: 1;
+  width: 100%;
+}
+
+.consult_form button {
+  width: 10%;
+  cursor: pointer;
+  background-color: rgb(234, 69, 40);
+  color: black;
+  border-radius: 3px;
+}
+
+.consult_form > div:last-child {
+  margin-top: 1%;
+  width: 100%;
+  display: flex;
+  justify-content: flex-end;
+  padding: 0;
+  margin-right: 0;
+}
+
+.consult_interface {
+  height: 97%;
+  width: 100%;
+  border: solid;
+  border-width: 2px;
+  border-radius: 5px;
+  font-family: Arial;
+  border-color: grey;
+}
+
+#bd {
+  width: 30%;
+  display: none;
+  resize: horizontal;
+  align-items: flex-start;
+  max-width: 50%;
+  height: 95%;
+  margin: 1%;
+  flex-direction: column;
+}
+
+.table_container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  margin-top: 3%;
+  width: 80%;
+  overflow-x: auto;
+  height: 30%;
+  margin-left: 5px;
+  border-width: 1px;
+  border-radius: 15px;
+  border-color: black;
+  background-color: rgba(203, 202, 206, 0.5);
+  padding: 5px;
+}
+
+
+.table_container::-webkit-scrollbar-thumb {
+  background-color: #888; 
+  border-radius: 5px;
+}
+
+.container::-webkit-scrollbar {
+  width: 5%; 
+  height: 5px;
+  transition: background-color 0.3s;
+}
+
+.table_name {
+  display: flex;
+  font-size: large;
+  color: black;
+  font-weight: bolder;
+  text-decoration: underline;
+  margin-bottom: 5px;
+  width: 100%;
+  height: fit-content;
+  text-align: start;
+  font-weight: bolder;
+  color: rgba(153, 101, 21);
+}
+
+.table_atributes {
+  display: flex;
+  flex-direction: row;
+  width: fit-content;
+  height: fit-content;
+}
+
+.atribute_container {
+  display: flex;
+  height: fit-content;
+  width: max-content;
+  font-size: medium;
+  border: solid;
+  border-width: 1px;
+  border-color: black;
+  text-align: start;
+  padding: 3px;
+  color: black;
+}
+
+.tuple_container {
+  display: flex;
+  height: fit-content;
+  font-size: medium;
+  border: solid;
+  border-width: 1px;
+  border-color: black;
+  text-align: start;
+  color: black;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.menuelement {
+  width: 55%;
+  height: 10%;
+  background-color: black;
+  opacity: 50%;
+  margin: 5% 0;
+}
+
+#menubutton {
+  margin-right: 0.5%;
+  width: 4%;
+  height: 80%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: transparent;
+  border: none;
+}
+
+#menubutton:hover {
+  border-width: 0.1%;
+  background-color: rgba(117, 111, 158, 0.1);
+  border-radius: 100%;
+  cursor: pointer;
+}
+
+.operator-container{
+  display: flex;
+  position: relative;
+  justify-content: space-between;
+  align-items: center;
+  flex: 1;
+  margin-left: 1%;
+}
+
+.operator-symbol {
+  font-size: 3.5em;
+  display: flex;
+  text-align: center;
+  align-items: center;
+  justify-content: center;
+  flex-grow: 1;
+}
+
+.input-atributes {
+  display: flex;
+  box-sizing: border-box; 
+  border-radius: 2px;
+  border-width: 0px;
+  border-color: #ccc;
+  outline: none;
+  width: 100%;
+}
+
+.attribute-value-container {
+  display: flex;
+  align-self: flex-end;
+  border-width: 5px;
+}
+
+.relationArea {
+  display: flex;
+  justify-content: space-between; 
+  align-items: center;
+}
+
+.simple_relation {
+  display: flex;
+  outline: none;
+  border: none;
+  font-size: 2.5em;
+  text-align: center;
+  width: 95%;
+  box-sizing: border-box;
+}
+
+.relationArea > span:first-child{
+  display: flex;
+  font-size: 2.5em;
+  height: 100%;
+  align-items: center;
+
+}
+
+.relationArea > span:last-child {
+  display: flex;
+  font-size: 2.5em;
+  height: 100%;
+  align-items: center;
+}
+
+.complex_relation{
+  align-items: center;
+  background-color: white;
+  width: min-content;
+}

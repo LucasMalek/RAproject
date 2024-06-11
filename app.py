@@ -9,6 +9,7 @@ import atexit
 import os
 import shutil
 from datetime import timedelta
+import glob
 
 
 def limpar_arquivos_session():
@@ -18,6 +19,15 @@ def limpar_arquivos_session():
         print("Arquivos de sessão removidos com sucesso.")
     else:
         print("O diretório de sessão não existe.")
+
+
+def clean_db_files():
+    files = glob.glob('*.db')
+    for file in files:
+        try:
+            os.remove(file)
+        except OSError as e:
+            print(e)
 
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
@@ -32,7 +42,7 @@ requisition_queue = queue.Queue()
 result_queue = queue.Queue()
 
 
-def get_relations(string):
+def reform_list(string):
     padrao_relations_tuples = r'[A-Z][a-zA-Z]+(?=\()'
     relations_tuples = []
     relation_label = []
@@ -53,10 +63,41 @@ def get_relations(string):
         relations_tuples.append(result_queue.get())
 
     for i, item in enumerate(relations_tuples):
-        relations_tuples[i] = re.sub(r'\([^)]*\)', '', item)
-        relations_tuples[i] = re.sub(r'-+', '', relations_tuples[i])
+        lines = item.strip().splitlines()
+        padrao = re.compile(r'^\s*\d+,\s*[^,]+(,\s*[^,]+)*\s*$')
+        tuplas = []
+        for line in lines:
+            if padrao.match(line):
+                tupla = tuple(part.strip() for part in line.split(','))
+                tuplas.append(tupla)
+        relations_tuples[i] = tuplas
 
-    return [label + tup for label, tup in zip(relation_label, relations_tuples)], relation_label
+    return relation_label, relations_tuples
+
+
+def reform_consult(string):
+    pattern_labels = re.compile(r'\(.*?\)')
+    pattern_tuples = re.compile(r'[^-\s].*(?=\n)')
+
+    reformed_string = []
+    index = 0
+
+    match_labels = re.search(pattern_labels, string)
+    if match_labels:
+        reformed_string.append(match_labels.group())
+        index = match_labels.end()
+
+    while index < len(string):
+        match_tuples = re.search(pattern_tuples, string[index:])
+        if match_tuples:
+            tuple_line = match_tuples.group().strip()
+            if not re.match(r'^\d+ tuples returned', tuple_line):
+                reformed_string.append(tuple_line)
+            index += match_tuples.end()
+        else:
+            index += 1
+
+    return reformed_string
 
 
 def process_db_tasks():
@@ -66,7 +107,6 @@ def process_db_tasks():
         if task == 1:
             instances[user] = func
         elif task == 2:
-            print(func)
             result = instances[user].executa_consulta_ra(func)
             result_queue.put(result)
 
@@ -143,16 +183,6 @@ def CreateConsultfromOperators(operators):
 
 @app.route('/home', methods=['GET', 'POST'])
 def home():
-    global count
-    if 'session_init' not in session:
-        session['session_init'] = count
-        bd_name = request.args.get('bd_name', '')
-        requisition_queue.put(
-            [ralib.RA(bd_name), session['session_init'], 1])
-        requisition_queue.put(
-            [f"radb {bd_name}", session['session_init'], 2])
-        result_queue.get()
-        count += 1
     return render_template('home.html')
 
 
@@ -163,7 +193,8 @@ async def consult():
             query = f"{CreateConsultfromOperators(request.get_json())};"
             requisition_queue.put([query, session['session_init'], 2])
             result = result_queue.get()
-            return jsonify(result)
+            result_formated = reform_consult(result)
+            return jsonify(result_formated)
         except Exception as e:
             print(e)
             return jsonify({'error': 'Ocorreu um erro durante a consulta'})
@@ -171,38 +202,46 @@ async def consult():
         return jsonify({'error': 'Você precisa definir o banco de dados primeiro!'})
 
 
-@app.route('/list', methods=['GET'])
-def list():
-    relations_details_structure = []
-    if 'session_init' in session:
+@app.route('/loadfile', methods=['GET', 'POST'])
+def loadfile():
+    if 'session_init' not in session:
+        relations_details_structure = []
+        file = request.files['file']
+        bd_name = file.filename
+        file.save(os.path.join(os.getcwd(), bd_name))
+        global count
+        session['session_init'] = count
+        requisition_queue.put(
+            [ralib.RA(bd_name), session['session_init'], 1])
+        requisition_queue.put(
+            [f"radb {bd_name}", session['session_init'], 2])
+        result_queue.get()
+        count += 1
         try:
             requisition_queue.put(['\list;', session['session_init'], 2])
-            bd, relations_labels = get_relations(result_queue.get())
+            result = result_queue.get()
+            relations_labels, tuples = reform_list(result)
             for item in relations_labels:
                 match = re.match(r'(\w+)\((.*?)\)', item)
                 if match:
                     nome_relacao = match.group(1).strip()
                     atributos_str = match.group(2)
-                    atributos = [atributo.split(':')[0].strip(
-                    ) for atributo in atributos_str.split(',')]
+                    atributos = [atributo.strip()
+                                 for atributo in atributos_str.split(',')]
                     relations_details_structure.append(
                         [nome_relacao] + atributos)
-            return jsonify(bd, relations_details_structure)
+            return jsonify([tuples, relations_details_structure])
         except Exception as e:
             return jsonify({'erro': e})
 
 
-@app.route('/loadfile', methods=['GET', 'POST'])
-def loadfile():
-    if request.method == 'POST':
-        file = request.files['file']
-        file.save(os.path.join(os.getcwd(), file.filename))
-        return redirect(url_for('home', bd_name=file.filename))
-    else:
-        return render_template('loadfile.html')
+@app.route('/prototipo', methods=['GET'])
+def prototipo():
+    return render_template('prototipohome.html')
 
 
 atexit.register(limpar_arquivos_session)
+atexit.register(clean_db_files)
 
 if __name__ == '__main__':
     app.run(debug=True)

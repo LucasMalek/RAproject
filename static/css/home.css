@@ -71,6 +71,7 @@
     height: 100%; /* Garante que o texto ocupe toda a altura do operator-container */
     position: relative;
     align-items: center;
+    flex-grow: 0;
 }
 
 .input-atributes {
@@ -88,9 +89,11 @@
 .operator-container {
     display: flex; 
     align-items: center; 
-    width: fit-content;
-    height: 6em;
+    width: 30%;
+    height: 15%;
     position: relative;
+    flex-basis: auto;
+    flex: 1;
 }
 
 .relationArea {
@@ -98,7 +101,7 @@
     justify-content: space-between; 
     align-items: center; 
     height: 3em;
-    width: 100%;
+    flex-grow: 1;
 }
 
 .relationArea > span:first-child{
@@ -129,7 +132,5 @@
     width: 100%;
 }
 
-.complex_relation {
-    width: 100%;
-}
+
 

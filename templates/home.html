@@ -215,12 +215,11 @@
                 }
             ).then(data => {
                 console.log(data)
-                var resultadoHTML = '<ul>';
-                        for(element of data){
-                            resultadoHTML += '<li>' + element + '</li>';
-                        }
-                    resultadoHTML += '</ul>';
-                    document.getElementById('result').innerHTML = resultadoHTML;
+                let resultadoHTML = '';
+                for(element of data) {
+                    resultadoHTML += '<pre>' + element + '</pre>'
+                }
+                document.getElementById('result').innerHTML = resultadoHTML;
                 }).catch(error => {
                     console.log(error);
             }).catch(error => {
