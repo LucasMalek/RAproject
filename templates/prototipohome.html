@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="stylesheet" href="{{ url_for('static', filename='css/prototipohome.css') }}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
   <title>Document</title>
 </head>
 <body>
@@ -16,19 +17,48 @@
           <div class="menuelement"></div>
       </button>
     </div>
+    <div class="tab_container">
+      <div id="consult">Consulta</div>
+      <div id="results">Resultados</div>
+    </div>
     <div class="maincontentborder">
       <div class="contentcontainer">
         <img src="../static/images/Logo.png" id="logo">
         <h2>Algebra relacional online</h2>
         <form class="userchoicecontainer">
-          <input type="file" id="fileInput" accept=".db,.sql">
+          <input type="file" id="fileInput" accept=".db">
+          <button onclick="displaycreatetable(1)">Criar tabela</button>
           <button type="submit">Entrar</button>
           <button>Saiba mais sobre o projeto</button>
         </form>
       </div>
     </div>
   </div>
-    <div class="saibamais"></div>
+    <div class="saibamais">
+        <div id="create_table_container">
+          <div id="tab_display" tabnumber = 1>
+            <button id="close-create-table" onclick="deletecreatetable(this.parentNode.parentNode)">X</button>
+            <input type="text" class="create-table-name" placeholder="Nome da tabela">
+            <div class="attribute-input">
+                <input type="text" placeholder="Nome do Atributo" class="create_atribute_name">
+                <select class="attribute_type">
+                    <option selected disabled>Tipo</option>
+                    <option value="TEXT">Texto</option>
+                    <option value="INT">Número</option>
+                    <option value="DATE">Data</option>
+                </select>
+                <button class="add-button" onclick="addAttribute(this.parentNode.parentNode)">+</button>
+            </div>
+          <div class="tuple_input">
+            <button class="add-button" onclick="addtuple(this.parentNode.parentNode)">+</button>
+            <input class="create_tuple_element" placeholder="Digite o valor">
+          </div>
+          <button class="create-db-button" onclick="sendbdtocreate('/createdbfile')">
+            <i class="fas fa-play" style="margin-right: 5px;"></i>Criar BD
+          </button>
+          </div>
+      </div>
+      </div>
       <div id="bd">
       </div>
       <div class="consult_environment">
@@ -43,35 +73,41 @@
           <button onclick='operator_impression("⋈θ")'>⋈θ</button>
           <button onclick='operator_impression("\u00F7")'>÷</button>
       </div>
-      <form method="post" id="consult" class="consult_form">
+      <form method="post" id="consult_form">
           <div class="consult_interface" contenteditable="true"></div>
           <div>
             <button type="submit">Enviar</button>
           </div>
       </form>
       </div>
-
+      <div class="resultcontainer">
+        <div id="historic">
+          <div class="titlecontainer">
+            <h2>Histórico</h2>
+          </div>
+        </div>
+        <div id="result">
+          <div class="titlecontainer">
+            <h2>Resultado</h2>
+            <div id="resultarea">
+              <div id="label"></div>
+              <div id="tuples"></div>
+            </div>
+          </div>
+        </div>
+      </div>
   <script>
-
     const form = document.querySelector('.userchoicecontainer');
     form.addEventListener('submit', handleFileSelection);
 
     function handleFileSelection(event) {
-
       event.preventDefault();
       const fileInput = document.getElementById('fileInput');
-      const replacementContainer = document.createElement('div');
-      replacementContainer.setAttribute('class', 'consultcontainer');
-      const contentContainer = document.querySelector('.contentcontainer');
-      let selectedFile = fileInput.files[0];
-      const containerborder = document.querySelector('.maincontentborder');
-      const consult_environment = document.querySelector('.consult_environment')
-      const bd_area = document.querySelector('#bd')
+      const selectedFile = fileInput.files[0];
 
       if (!selectedFile) {
         return;
       }
-
         let formData = new FormData();
         formData.append('file', selectedFile);
 
@@ -85,7 +121,20 @@
                return response.json()
               }
         }).then( db => {
-            contentContainer.classList.add('content-fading-out');
+          initializesystem(db)
+        }) 
+    }
+
+    function initializesystem(db) {
+      const replacementContainer = document.createElement('div');
+      replacementContainer.setAttribute('class', 'consultcontainer');
+      const contentContainer = document.querySelector('.contentcontainer');
+      const containerborder = document.querySelector('.maincontentborder');
+      const consult_environment = document.querySelector('.consult_environment');
+      const bd_area = document.querySelector('#bd');
+      const resultcontainer = document.querySelector('.resultcontainer')
+
+      contentContainer.classList.add('content-fading-out');
             contentContainer.addEventListener('transitionend', () => {
             containerborder.removeChild(contentContainer);
             bd_area.style.display = 'flex';
@@ -102,48 +151,300 @@
             replacementContainer.classList.add('content-fading-in')
             containerborder.style.backgroundColor = 'white';
             containerborder.style.opacity = '95%';
-            printdbtables(db)
+            printdbtables(db, 'alltables')
+            let tab = document.querySelector('.tab_container')
+            tab.style.display = 'flex'
+            Array.from(tab.children).forEach(element => {
+              element.style.display = 'flex';
+            })
+            containerborder.style.borderTopLeftRadius = '0';
+            containerborder.appendChild(resultcontainer);
+            tablistener()
             });    
-        }) 
     }
     
-    const resizableElement = document.querySelector('#bd');
-    let isResizing = false;
-    if (resizableElement) {
-      resizableElement.addEventListener('mousedown', (event) => {
-      if (event.button === 0 && event.offsetX > resizableElement.offsetWidth - 10) {
-        isResizing = true;
-      }
-    });
-
-    resizableElement.addEventListener('mouseover', (event) => {
-      if (event.offsetX > resizableElement.offsetWidth - 10) {
-        resizableElement.style.cursor = 'e-resize';
-      } else {
-        resizableElement.style.cursor = 'default';
-      }
-    });
-
-    window.addEventListener('mousemove', (event) => {
-      if (isResizing) {
-        let newWidth = event.clientX - resizableElement.offsetLeft;
-        let parentWidth = resizableElement.parentElement.offsetWidth;
-        if (newWidth < parentWidth * 0.5 && newWidth > parentWidth * 0.3) {
-          resizableElement.style.width = newWidth + 'px';
-        }
-      }
-    });
-
-    window.addEventListener('mouseup', (event) => {
-      if (event.button === 0) {
-        isResizing = false;
-      }
-    });
-    }
-
+    let last_tab = "consult";
+    let last_tab_create_table = 1;
     let operators = [];
     let selectedOperator = null
-        let click_flag = false
+    let click_flag = false
+    let createtableclone = document.querySelector('#tab_display').cloneNode(true);
+
+    function addAttribute(fathercontainer, namevalue, typevalue, tuplevalue) {
+            const attributeNameInput = document.createElement('input');
+            attributeNameInput.type = 'text';
+            attributeNameInput.placeholder = 'Nome do Atributo';
+            attributeNameInput.className = "create_atribute_name"
+            attributeNameInput.style.marginLeft = "0px";
+            attributeNameInput.style.borderTopLeftRadius = "0px";
+            attributeNameInput.style.borderBottomLeftRadius = "0px";
+            let input_tuples
+            if(!tuplevalue) {
+              input_tuples =  fathercontainer.querySelectorAll('.tuple_input');
+            }else {
+              input_tuples.fathercontainer.querySelector('.tuple_input');
+            }
+            const attributeTypeSelect = document.createElement('select');
+            attributeTypeSelect.className = "attribute_type";
+            attributeTypeSelect.options[attributeTypeSelect.options.length] = new Option('Tipo', 'Tipo');
+            attributeTypeSelect.options[attributeTypeSelect.options.length] = new Option('Texto', 'TEXT');
+            attributeTypeSelect.options[attributeTypeSelect.options.length] = new Option('Número', 'INT');
+            attributeTypeSelect.options[attributeTypeSelect.options.length] = new Option('Data', 'DATE');
+            if(namevalue) {
+              attributeNameInput.value = namevalue
+              for(i = 0; i < attributeTypeSelect.length; i++) {
+                let option = attributeTypeSelect.options[i]
+                if(typevalue == option.value) {
+                  option.selected = true;
+                  break; 
+                }
+              }
+            }
+            const addButton = document.createElement('button');
+            addButton.className = 'add-button';
+            addButton.innerText = '+';
+            container = fathercontainer.querySelector('.attribute-input');
+            const selects = container.querySelectorAll('.attribute_type');
+            selects[selects.length - 1].style.borderTopRightRadius = '0px';
+            selects[selects.length - 1].style.borderBottomRightRadius = '0px';
+            container.querySelector('.add-button').remove();
+            container.appendChild(attributeNameInput);
+            container.appendChild(attributeTypeSelect);
+            container.appendChild(addButton);
+
+            if(!tuplevalue) {
+              input_tuples.forEach((element) => {
+                let newvaluetuple =  document.createElement('input');
+                newvaluetuple.className = "create_tuple_element";
+                newvaluetuple.style.borderTopLeftRadius = '0px';
+                newvaluetuple.style.borderBottomLeftRadius = '0px';
+                newvaluetuple.placeholder = 'Digite o valor';
+                lastchild = element.querySelector('.create_tuple_element:last-child');
+                lastchild.style.borderBottomRightRadius = '0px';
+                lastchild.style.borderTopRightRadius = '0px';
+                element.appendChild(newvaluetuple)
+              })
+            }else {
+                let newvaluetuple =  document.createElement('input');
+                newvaluetuple.className = "create_tuple_element";
+                newvaluetuple.style.borderTopLeftRadius = '0px';
+                newvaluetuple.style.borderBottomLeftRadius = '0px';
+                newvaluetuple.value = tuplevalue;
+                lastchild = input_tuples.querySelector('.create_tuple_element:last-child');
+                lastchild.style.borderBottomRightRadius = '0px';
+                lastchild.style.borderTopRightRadius = '0px';
+                input_tuples.appendChild(newvaluetuple)    
+            }
+            
+            addButton.onclick = function() {
+                addAttribute(fathercontainer);
+            };
+
+        }
+
+function addtuple(container, values) {
+    const allTupleInputs = container.querySelectorAll('.tuple_input');
+    const lastTupleInput = allTupleInputs[allTupleInputs.length - 1];
+    const addButton = lastTupleInput.querySelector('.add-button');
+
+    if (addButton) {
+        addButton.remove();
+    }
+    lastTupleInput.style.paddingLeft = '4.2%';
+    const quantityofvalues = container.querySelector('.tuple_input').querySelectorAll('.create_tuple_element').length;
+    const element = document.createElement('div');
+    element.className = 'tuple_input';
+
+    const button = document.createElement('button');
+    button.textContent = '+';
+    button.className = "add-button";
+    button.onclick = function() {
+      addtuple(container)
+    };
+    element.appendChild(button);
+
+    for (let i = 0; i < quantityofvalues; i++) {
+        let newvaluetuple = document.createElement('input');
+        newvaluetuple.className = "create_tuple_element";
+        newvaluetuple.placeholder = 'Digite o valor';
+        if(values) {
+          newvaluetuple.value = values[i]
+        }
+        if (quantityofvalues != 1) {
+            if (i == 0) {
+                newvaluetuple.style.borderTopRightRadius = '0px';
+                newvaluetuple.style.borderBottomRightRadius = '0px';
+                newvaluetuple.style.borderTopLeftRadius = '5px';
+                newvaluetuple.style.borderBottomLeftRadius = '5px';
+            } else if (i == quantityofvalues - 1) {
+                newvaluetuple.style.borderTopLeftRadius = '0px';
+                newvaluetuple.style.borderBottomLeftRadius = '0px';
+                newvaluetuple.style.borderTopRightRadius = '5px';
+                newvaluetuple.style.borderBottomRightRadius = '5px';
+            } else {
+                newvaluetuple.style.borderRadius = '0px';
+            }
+        }
+        element.appendChild(newvaluetuple);
+    }
+
+    container.appendChild(element);
+}
+
+function deletecreatetable(createtable) {
+   createtable.style.display = 'none';
+   let table_tab = document.querySelector('#create_table_tab')
+   if(table_tab) {
+        table_tab.remove()
+   }
+   let old = document.getElementById('tab_display');
+   createtable.replaceChild(createtableclone, old);
+}
+
+function displaycreatetable(requisitiontype) {
+    
+    const maincontainer = document.querySelector('#create_table_container');
+    maincontainer.style.display = 'flex';
+    
+    if(requisitiontype == 1) {
+    let numtabelas = 1;
+    let tabcontainer = document.createElement('div');
+    tabcontainer.className = 'tab_container';
+    tabcontainer.style.display = 'flex';
+    tabcontainer.style.top = '18%';
+    tabcontainer.style.left = '20%';
+    tabcontainer.style.width = '60%';
+    tabcontainer.id = 'create_table_tab';
+
+    let tab = document.createElement('div');
+    tab.textContent = `Tabela ${numtabelas}`;
+    tab.style.backgroundColor = '#f9f9f9';
+    tab.style.display = 'flex';
+    tab.id = numtabelas;
+
+    let addbutton = document.createElement('BUTTON');
+    addbutton.className = 'add-button';
+    addbutton.textContent = '+';
+    addbutton.style.color = 'black';
+    addbutton.style.fontSize = 'larger';
+    addbutton.style.alignSelf = 'center';
+    addbutton.style.marginBottom = '2.5%';
+    addbutton.style.marginLeft = '1.5%';
+    addbutton.style.padding = '0.9% 1.3%';
+    addbutton.style.backgroundColor = 'rgb(255, 215, 0)';
+    
+    addbutton.addEventListener('mouseover', () => {
+        addbutton.style.backgroundColor = 'rgba(255, 215, 0, 0.8)';
+    });
+    addbutton.addEventListener('mouseout', () => {
+        addbutton.style.backgroundColor = 'rgb(255, 215, 1)';
+    });
+    addbutton.onclick = function() {
+        tabcontainer.querySelector('.add-button').remove();
+        let newtab = tab.cloneNode(true);
+        numtabelas = numtabelas + 1;
+        newtab.textContent = `Tabela ${numtabelas}`;
+        newtab.style.borderTopLeftRadius = '0px';
+        newtab.style.borderBottomLeftRadius = '0px';
+        newtab.id = numtabelas;
+        newtab.style.backgroundColor = 'rgba(244, 242, 247, 0.8)';
+        tabcontainer.appendChild(newtab);
+        tabcontainer.appendChild(addbutton);
+        let newtabDOM = createtableclone.cloneNode(true);
+        newtabDOM.setAttribute('tabnumber', `${numtabelas}`);
+        newtabDOM.style.display = 'none';
+        maincontainer.appendChild(newtabDOM);
+        createtabletablistener();
+    };
+
+    tabcontainer.appendChild(tab);
+    tabcontainer.appendChild(addbutton);
+    document.querySelector('.maincontainer').appendChild(tabcontainer);
+    createtabletablistener();
+    }
+    
+}
+
+function createtabletablistener() {
+  const tabcontainer = document.querySelector('#create_table_tab');
+  Array.from(tabcontainer.children).forEach(element => {
+    if (element.tagName != 'BUTTON') {
+        element.addEventListener('mouseover', function() {
+            if (element.id != last_tab_create_table) {
+                element.style.backgroundColor = 'rgba(244, 242, 247, 0.9)';
+            }
+        });
+
+        element.addEventListener('click', function() {
+            element.style.backgroundColor = '#f9f9f9';
+            Array.from(tabcontainer.children).forEach(element2 => {
+                if (element2.id != element.id && element2.tagName != 'BUTTON') {
+                    element2.style.backgroundColor = 'rgba(244, 242, 247, 0.8)';
+                }
+            });
+            allDOMelements = document.querySelectorAll('#tab_display');
+            allDOMelements.forEach(e => {
+              e.style.display = 'none';
+            })
+            allDOMelements.forEach(e => {
+              tabnumber = e.getAttribute('tabnumber');
+              if(element.id == tabnumber) {
+                e.style.display = 'flex';
+              }
+            })
+            last_tab_create_table = element.id;
+        });
+
+        element.addEventListener('mouseout', function() {
+            if (element.id != last_tab_create_table) {
+                element.style.backgroundColor = 'rgba(244, 242, 247, 0.8)';
+            }
+        });
+    }
+});
+} 
+    function tablistener() {
+      Array.from(document.querySelector('.tab_container').children).forEach(element => {
+      
+       element.addEventListener('mouseover', function() {
+          if(element.id != last_tab) {
+            element.style.backgroundColor = 'rgba(244, 242, 247, 0.9)';
+          }
+       })
+      
+      element.addEventListener('click', function() {
+        element.style.backgroundColor = 'rgba(244, 242, 247, 1)';
+    
+        let children = Array.from(document.querySelector('.maincontentborder').children);
+        
+        children.forEach(child => {
+            child.style.display = 'none';
+        });
+        
+        let childToShow
+        if(element.id == 'consult') {
+            childToShow = document.querySelector('.consultcontainer')
+        }else {
+          childToShow = document.querySelector('.resultcontainer')
+        }
+         
+        if (childToShow) {
+            childToShow.style.display = 'flex';
+        }
+
+        document.querySelector(`#${last_tab}`).style.backgroundColor = 'rgba(244, 242, 247, 0.8)';
+        
+        last_tab = element.id;
+          })
+
+        element.addEventListener('mouseout', function() {
+            if(element.id != last_tab) {
+                element.style.backgroundColor = 'rgba(244, 242, 247, 0.8)'; 
+            }
+        })
+
+        })
+    }
 
     function removeOperatorByIndex(index) {
             for (let i = 0; i < operators.length; i++) {
@@ -314,7 +615,6 @@
                         operators[reference].relation[index] = complex_index
                         selectedOperator.parentNode.replaceChild(complex_input, selectedOperator);
                         complex_input.appendChild(createOperatorContainer(operator));
-                        complex_input.style.backgroundColor = 'red'
                 }
                 
             } else {
@@ -346,8 +646,18 @@
         });
         }
 
-        document.getElementById('consult').addEventListener('submit', function(e) {
+        document.getElementById('consult_form').addEventListener('submit', function(e) {
             e.preventDefault();
+            let resultarea = document.querySelector('#result');
+            let historicarea = document.querySelector('#historic');
+            let label = document.createElement('div');
+            label.classList.add('result_label');
+            let division = document.createElement('div');
+            division.classList.add('division');
+            let index_tuple =  document.createElement('div');
+            let userconsult = document.querySelector('.consult_interface');
+            console.log(userconsult.textContent);
+
             fetch('/consult', {
                 method: 'POST',
                 headers: {
@@ -363,85 +673,405 @@
                     }
                 }
             ).then(data => {
-                console.log(data)
-                let resultadoHTML = '';
-                for(element of data) {
-                    resultadoHTML += '<pre>' + element + '</pre>'
+                for(let [index, element] of data.entries()) {
+                  if (index == 0) {
+                     label.textContent = element;
+                     resultarea.appendChild(label);
+                     resultarea.appendChild(division);
+                  }else{
+                    let tuple =  document.createElement('div');
+                    tuple.classList.add('result_tuple');
+                    tuple.textContent = element
+                    resultarea.appendChild(tuple)
+                    if(index == data.length - 1) {
+                      resultarea.appendChild(division.cloneNode(true));
+                    }
+                    history.push(resultarea);
+                  }
                 }
-                document.getElementById('result').innerHTML = resultadoHTML;
-                }).catch(error => {
-                    console.log(error);
             }).catch(error => {
                 console.log(error);
             });
         });
 
-        
 
-        function printdbtables(data) {
-           const [tuples, labelsData] = data
-           let atributes_sizes = []
-           relations_container = document.querySelector('#bd');
-           for(let [index, table] of labelsData.entries()) {
-              atributes_sizes[index] = []
+        function printdbtables(data, requisition) {
+          const [tuples, labelsData] = data;
+          let atributes_sizes = [];
+          relations_container = document.querySelector('#bd');
+          loadercircle = document.createElement('div');
+          loadercircle.className = 'loader_circle'
+          
+          for(let [index, table] of labelsData.entries()) {
+              atributes_sizes[index] = [];
+              let table_container_complete;
               let table_container = document.createElement('div');
               table_container.classList.add('table_container');
+              
+              let table_extension_container = document.createElement('div');
+              table_extension_container.classList.add('table_extension_container');
+              
+              let table_extension_button = document.createElement('BUTTON');
+              table_extension_button.classList.add('table_extension_button');
+              table_extension_button.title = 'Visualizar tabela completa';
+              table_extension_button.textContent = '↗';
+              
+              table_extension_button.onclick = function() {
+                  if(table_container_complete) {
+                    let popup = document.createElement('div');
+                    popup.classList.add('complete_table');
+                    table_container_complete.style.height = '100%';
+                    table_container_complete.style.width = '100%';
+                    table_container_complete.style.backgroundColor = 'transparent';
+                    table_container_complete.style.border = 'none';
+                    table_container_complete.style.paddingRight = '0px';
+                    table_container_complete.style.justifyContent = 'flex-start';
+                    table_container_complete.style.marginLeft = 0;
+                    let circle = table_container_complete.querySelector('.loader_circle')
+                    if(circle) {
+                      circle.remove()
+                    }
+                    let close_button = document.createElement('div');
+                    close_button.textContent = 'X';
+                    close_button.classList.add('close_button');
+                    close_button.onclick = function() {
+                        document.body.removeChild(this.parentNode.parentNode);
+                    }
+                    
+                    let topbar = document.createElement('div');
+                    topbar.classList.add('topbarextension');
+                    topbar.appendChild(close_button);
+                    popup.appendChild(topbar);
+                    popup.appendChild(table_container_complete);
+                    document.body.appendChild(popup);
+                    
+                    table_container_complete.onscroll = function() {
+                        var scrollLeft = table_container_complete.scrollLeft;
+                        close_button.style.transform = 'translateX(' + scrollLeft + 'px)';
+                    }
+                  }else {
+                    alert('A tabela toda já está sendo mostrada')
+                  }
+                 
+              }
+              
+              let table_insert_button = document.createElement('BUTTON');
+              table_insert_button.className = 'table_extension_button';
+              table_insert_button.title = 'Adicionar tuplas à tabela';
+              table_insert_button.textContent = '+';
+              
+              table_insert_button.onclick = function() {
+                  let tablename = this.parentNode.parentNode.querySelector('.table_name').textContent;
+                  fetch('/colectinfofromtable', {
+                      method: 'POST',
+                      body: JSON.stringify({'tablename': tablename, 'type': 'notincludetuples'}),
+                      headers: {
+                          'Content-Type': 'application/json'
+                      }
+                  }).then(response => {
+                      return response.json();
+                  }).then(data => {
+                      displaycreatetable(2);
+                      let container = document.querySelector('#tab_display');
+                      let attributes = data.attributes;
+                      let types = data.types;
+                      container.querySelector('.create-table-name').value = tablename;
+                      let oldbutton = container.querySelector('.create-db-button');
+                      let insertbutton = document.createElement('BUTTON');
+                      insertbutton.className = 'create-db-button';
+                      insertbutton.innerHTML = '<i class="fas fa-play" style="margin-right: 5px;"></i> Adicionar tuplas';
+                      insertbutton.onclick = function() {
+                          sendbdtocreate('/insert');
+                      }
+                      container.replaceChild(insertbutton, oldbutton);
+                      
+                      attributes.forEach((attribute, index) => {
+                          let type = types[index];
+                          if (index === 0) {
+                              document.querySelector('.create_atribute_name').value = attribute;
+                              const select = document.querySelector('.attribute_type');
+                              for (let i = 0; i < select.options.length; i++) {
+                                  const option = select.options[i];
+                                  if (option.value == type) {
+                                      option.selected = true;
+                                      break;
+                                  }
+                              }
+                          } else {
+                              addAttribute(container, attribute, type);
+                          }
+                      });
+                  }).catch(error => {
+                      console.error('Erro ao obter os atributos:', error);
+                  });
+              }
+
+              let table_delete_button = document.createElement('BUTTON');
+              table_delete_button.className = 'table_extension_button';
+              table_delete_button.title = 'Deletar tabela';
+              table_delete_button.textContent = 'x';
+
+              table_delete_button.onclick = function() {
+                let container = this.parentNode.parentNode
+                let tablename = container.querySelector('.table_name').textContent;
+
+                fetch('/deletetable', {
+                  method: 'POST',
+                  body: JSON.stringify({'tablename': tablename}),
+                  headers: {
+                    'Content-Type': 'application/json'
+                  }
+                }).then((response) => {
+                     if(!response.ok) {
+                      alert(response)
+                     }
+                     else {
+                         container.remove()
+                     }
+                })
+
+              }
+
+              let table_update_button = document.createElement('BUTTON');
+              table_update_button.className = 'table_extension_button';
+              table_update_button.title = 'Atualizar tabela';
+              table_update_button.textContent = '↻';
+
+              table_update_button.onclick = function() {
+                 let tablename = this.parentNode.parentNode.querySelector('.table_name').textContent;
+                 fetch('/colectinfofromtable', {
+                  method: 'POST',
+                  body: JSON.stringify({'tablename': tablename, 'type': 'includetuples'}),
+                  headers: {
+                      'Content-Type': 'application/json'
+                  }}).then(response => {
+                      return response.json();
+                  }).then(data => { 
+                      displaycreatetable(2);
+                      let container = document.querySelector('#tab_display');
+                      let attributes = data.attributes;
+                      let types = data.types;
+                      let tuples = data.tuples;
+                      container.querySelector('.create-table-name').value = tablename;
+                      let oldbutton = container.querySelector('.create-db-button');
+                      let insertbutton = document.createElement('BUTTON');
+                      insertbutton.className = 'create-db-button';
+                      insertbutton.innerHTML = '<i class="fas fa-play" style="margin-right: 5px;"></i> Atualizar tuplas';
+                      insertbutton.onclick = function() {
+                          sendbdtocreate('/update');
+                      }
+                      container.replaceChild(insertbutton, oldbutton);
+                      
+                      attributes.forEach((attribute, index) => {
+                          let type = types[index];
+                          let tuplevalue = tuples[0][index]
+                          if (index === 0) {
+                              document.querySelector('.create_atribute_name').value = attribute;
+                              const select = document.querySelector('.attribute_type');
+                              document.querySelector('.create_tuple_element').value = tuplevalue;
+                              for (let i = 0; i < select.options.length; i++) {
+                                  const option = select.options[i];
+                                  if (option.value == type) {
+                                      option.selected = true;
+                                      break;
+                                  }
+                              }
+                          } else {
+                              addAttribute(container, attribute, type, tuplevalue);
+                          }
+                       })
+
+                     tuples.slice(1).forEach(tuple => {
+                         addtuple(container, tuple)
+                     })
+                })
+              }
+              
+              table_extension_container.appendChild(table_extension_button);
+              table_extension_container.appendChild(table_insert_button);
+              table_extension_container.appendChild(table_update_button);
+              table_extension_container.appendChild(table_delete_button);
+              
               let table_name = document.createElement('div');
               table_name.classList.add('table_name');
-              let table_atributes = document.createElement('div')
-              table_atributes.classList.add('table_atributes')
-              table_name.textContent = table[0]
-              table_container.appendChild(table_name)
-              for(atribute_name of table.slice(1)) {
-                let atribute_container = document.createElement('div')
-                atribute_container.classList.add('atribute_container')
-                atribute_container.textContent = atribute_name
-                table_atributes.appendChild(atribute_container)
+              let table_atributes = document.createElement('div');
+              table_atributes.classList.add('table_atributes');
+              table_name.textContent = table[0];
+              table_container.appendChild(table_extension_container);
+              table_container.appendChild(table_name);
+              
+              for(let atribute_name of table.slice(1)) {
+                  let atribute_container = document.createElement('div');
+                  atribute_container.classList.add('atribute_container');
+                  atribute_container.textContent = atribute_name;
+                  table_atributes.appendChild(atribute_container);
               }
-
+              
               table_container.appendChild(table_atributes);
-              relations_container.appendChild(table_container);
-
-              table_atributes.querySelectorAll(':scope > .atribute_container').forEach(item => {
-                const computedStyle = window.getComputedStyle(item);
-                const borderWidth = parseFloat(computedStyle.borderLeftWidth) + parseFloat(computedStyle.borderRightWidth);
-                atributes_sizes[index].push(item.offsetWidth - borderWidth);
-              })
-
-              let count = 0
-
-              for(let tuple of tuples[index]) {
-                  if(count < 2) {
-                    let tuple_values_container = document.createElement('div')
-                    tuple_values_container.classList.add('table_atributes')
-                    tuple_values_container.style.width = table_atributes.offsetWidth;
-                    for([index_value, value] of tuple.entries()) {
-                      let value_container = document.createElement('div')
-                      value_container.classList.add('tuple_container')
-                      value_container.style.width = atributes_sizes[index][index_value] + 'px'
-                      value_container.textContent = value
-                      tuple_values_container.appendChild(value_container)
-                    }
-                    table_container.appendChild(tuple_values_container);
-                    count = count + 1;
-                  }
-                  else {
-                    let elipses = document.createElement('p');
-                    elipses.textContent = '⋮';
-                    elipses.style.width = 7 + 'px'
-                    elipses.style.height = 4 + 'px'
-                    table_container.appendChild(elipses)
-                    console.log(elipses)
-                    break
-                  }
+              
+              if(requisition == 'insert') {
+                  relations_container.querySelectorAll('.table_container').forEach(element => {
+                      let name = element.querySelector('.table_name').textContent;
+                      if(name == table[0]) {
+                          relations_container.replaceChild(table_container, element);
+                          let children = table_container.children;
+                          for (let i = 0; i < children.length; i++) {
+                              if (children[i] !== loadercircle) {
+                                  children[i].style.opacity = '0.05';
+                              }
+                          }
+                          table_container.appendChild(loadercircle)
+                      }
+                  });
+              } else {
+                  relations_container.appendChild(table_container);
               }
-           }
-           return 'ok'
-        }
+              
+              table_container.onscroll = function() {
+                  var scrollLeft = table_container.scrollLeft;
+                  let buttons = table_container.querySelectorAll('button');
+                  buttons.forEach((button) => {
+                      button.style.transform = 'translateX(' + scrollLeft + 'px)';
+                  });
+              }
+              
+              table_atributes.querySelectorAll(':scope > .atribute_container').forEach(item => {
+                  const computedStyle = window.getComputedStyle(item);
+                  const borderWidth = parseFloat(computedStyle.borderLeftWidth) + parseFloat(computedStyle.borderRightWidth);
+                  atributes_sizes[index].push(item.offsetWidth - borderWidth);
+              });
+              
+              let count = 0;
+              
+              for(let tuple of tuples[index]) {
+                  if(tuple.some(item => item.includes('tuples returned'))) {
+                      break;
+                  }
+                  if(count < 3) {
+                      let tuple_values_container = document.createElement('div');
+                      if(requisition == 'insert') {
+                        tuple_values_container.style.opacity = '0.05'
+                      }
+                      tuple_values_container.classList.add('table_atributes');
+                      tuple_values_container.style.width = table_atributes.offsetWidth;
+                      for(let [index_value, value] of tuple.entries()) {
+                          let value_container = document.createElement('div');
+                          value_container.classList.add('tuple_container');
+                          value_container.style.width = atributes_sizes[index][index_value] + 'px';
+                          value_container.textContent = value;
+                          value_container.style.paddingLeft = '2%'
+                          tuple_values_container.appendChild(value_container);
+                      }
+                      table_container.appendChild(tuple_values_container);
+                  }
+                  if(count == 2) {
+                      let elipses = document.createElement('p');
+                      elipses.textContent = '⋮';
+                      elipses.style.width = '5px';
+                      elipses.style.height = '3px';
+                      table_container_complete = table_container.cloneNode(true);
+                      if(requisition == 'insert') {
+                        let children = table_container_complete.children;
+                        for (let i = 0; i < children.length; i++) {
+                            if (children[i] !== loadercircle) {
+                                children[i].style.opacity = '1';
+                            }
+                        }
+                        elipses.style.opacity = '0.05'
+                      }
+                      let buttons = table_container_complete.querySelector('.table_extension_container');
+                      table_container_complete.removeChild(buttons);
+                      table_container.appendChild(elipses);
+                  }
+                  if(count >= 3) {
+                      let tuple_values_container = document.createElement('div');
+                      tuple_values_container.classList.add('table_atributes');
+                      tuple_values_container.style.width = table_atributes.offsetWidth;
+                      for(let [index_value, value] of tuple.entries()) {
+                          let value_container = document.createElement('div');
+                          value_container.classList.add('tuple_container');
+                          value_container.style.width = atributes_sizes[index][index_value] + 'px';
+                          value_container.textContent = value;
+                          value_container.style.paddingLeft = '2%'
+                          tuple_values_container.appendChild(value_container);
+                      }
+                      table_container_complete.appendChild(tuple_values_container);
+                  }
+                  count++;
+              }
 
-        function pegar() {
-            console.log(operators)
-        }
+              if(requisition == 'insert') {
+                setTimeout(() => {
+                  table_container.removeChild(loadercircle);
+                  let children = table_container.children;
+                  for (let i = 0; i < children.length; i++) {
+                      if (children[i] !== loadercircle) {
+                          children[i].style.opacity = '1';
+                      }
+                  }
+                }, 1000)
+              }
+          }
+          return 'ok';
+      }
+      
+
+  function sendbdtocreate(route) {
+    let count = 1;
+    let db = {};
+    let tables = document.querySelectorAll('#tab_display');
+   
+    tables.forEach(table => {
+        let tablename = table.querySelector('.create-table-name').value;
+        let attributes = [];
+        let types = [];
+        let tuples = [];
+
+        table.querySelectorAll('.create_atribute_name').forEach(atributename => {
+            attributes.push(atributename.value);
+        });
+
+        table.querySelectorAll('.attribute_type').forEach(type => {
+            types.push(type.value);
+        });
+
+        let tupleDOM = table.querySelectorAll('.tuple_input');
+        tupleDOM.forEach(tuple => {
+            let array = [];
+            tuple.querySelectorAll('.create_tuple_element').forEach(cellvalue => {
+                array.push(cellvalue.value); 
+            });
+            tuples.push(array);
+        });
+            db[count] = {
+                tablename: tablename,
+                attributes: attributes,
+                types: types,
+                tuples: tuples
+            };
+            count = count + 1;
+        });
+        fetch(`${route}`, {
+          method: 'POST',
+          body: JSON.stringify(db),
+          headers: {
+            'Content-Type': 'application/json' 
+          }
+        }).then(response => {
+          if (!response.ok) {
+              throw new Error('Erro na requisição');
+          } else {
+               deletecreatetable(document.querySelector('#create_table_container'))
+               return response.json()
+              }
+        }).then( db => {
+          if(`${route}` == '/insert') {
+            printdbtables(db, 'insert')
+          }else {
+            initializesystem(db)
+          }
+        }) 
+        }          
 
         function operator_impression(operator) {
             if(operators.length == 0) {
@@ -453,11 +1083,6 @@
                 addOperator(operator);
             }
         }
-
-        function operatorimpressionprint() {
-          console.log(document.querySelectorAll('.complex_relation'))
-        }
-
 
 </script>
 </body>
