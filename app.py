@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, session, jsonify, redirect, url_for
+from flask import Flask, request, render_template, session, jsonify, url_for
 from flask_session import Session
 import queue
 import threading
@@ -13,6 +13,7 @@ import glob
 import sqlite3
 from io import BytesIO
 from werkzeug.datastructures import FileStorage
+import requests 
 
 
 def limpar_arquivos_session():
@@ -92,28 +93,28 @@ def reform_list(string, requisition):
 
 
 def reform_consult(string):
-    pattern_labels = re.compile(r'\(.*?\)')
-    pattern_tuples = re.compile(r'[^-\s].*(?=\n)')
-
-    reformed_string = []
-    index = 0
+    pattern_labels = re.compile(r'\((.*?)\)')
+    pattern_tuples = re.compile(r'^\s*([^\-].*?)\s*$', re.MULTILINE)
+    
+    labels = []
+    tuples = []
+    
+    reformed_result = []
 
     match_labels = re.search(pattern_labels, string)
     if match_labels:
-        reformed_string.append(match_labels.group())
+        labels = match_labels.group(1).split(', ')
         index = match_labels.end()
-
-    while index < len(string):
-        match_tuples = re.search(pattern_tuples, string[index:])
-        if match_tuples:
-            tuple_line = match_tuples.group().strip()
-            if not re.match(r'^\d+ tuples returned', tuple_line):
-                reformed_string.append(tuple_line)
-            index += match_tuples.end()
-        else:
-            index += 1
-
-    return reformed_string
+        
+    match_tuples = re.findall(pattern_tuples, string[index:])
+    for match in match_tuples:
+        line = match.strip()
+        if line and not line.startswith('-') and not re.match(r'^\d+ tuple(s)? returned', line):
+            tuples.append(line.split(', '))
+    
+    reformed_result = labels, tuples
+    
+    return reformed_result
 
 
 def process_db_tasks():
@@ -132,20 +133,67 @@ db_thread.daemon = True
 db_thread.start()
 
 
-def returnqueryUnary(operator, atributes, relation_structured):
-    relation = relation_structured
-    query = f'\\{operator}{{{atributes}}}({relation})'
-    return query
-
-
-def returnqueryBinary(operator, atributes, relation_structured):
-    relation_1, relation_2 = relation_structured
-    if atributes is None:
-        query = f'({relation_1})\\{operator}({relation_2})'
+def returnqueryUnary(operator, atributes, relation_structured, operator_code):
+    
+    def format_unary_html(operator_code, attributes, relation):
+        formatted_query = (
+            f'<span class = "text_query_operator">{operator_code}</span>'
+            f'<span class = "text_query_attributes">{{{attributes}}}</span>'
+            f'<span class = "text_query_parentheses">(</span><span class= "text_query_relation">{relation}</span><span class = "text_query_parentheses">)</span>'
+        )
+        return formatted_query
+    
+    query = []
+    if(isinstance(relation_structured, str)):
+        query.append(f'\\{operator}{{{atributes}}}({relation_structured})')
+        query.append(format_unary_html(operator_code, atributes, relation_structured))
     else:
-        query = f'({relation_1})\\{operator}{{{atributes}}}({relation_2})'
+        query.append(f'\\{operator}{{{atributes}}}({relation_structured[0]})')
+        query.append(format_unary_html(operator_code, atributes, relation_structured[1]))
     return query
 
+
+def returnqueryBinary(operator, atributes, relation_structured, operator_code):
+    query = []
+    relation_1, relation_2 = relation_structured
+    
+    def format_binary_query(rel1, rel2):
+        if atributes:
+            formatted_query = (
+                f'<span class = "text_query_parentheses">(</span><span class= "text_query_relation">{rel1}</span><span class = "text_query_parentheses">)</span>'
+                f'<span class="text_query_operator" style="font-size: 1.5rem !important;">{operator_code}</span>'
+                f'<span class = "text_query_attributes">{{{atributes}}}</span>'
+                f'<span class = "text_query_parentheses">(</span><span class= "text_query_relation">{rel2}</span><span class = "text_query_parentheses">)</span>'
+            )
+        else:
+            formatted_query = (
+                f'<span class = "text_query_parentheses">(</span><span class= "text_query_relation">{rel1}</span><span class = "text_query_parentheses">)</span>'
+                f'<span class = "text_query_operator" style="font-size: 1.8rem;">{operator_code}</span>'
+                f'<span class = "text_query_parentheses">(</span><span class= "text_query_relation">{rel2}</span><span class = "text_query_parentheses">)</span>'
+            )
+        return formatted_query
+
+    def append_queries(rel1_toquery, rel2_toquery, rel1_toshow, rel2_toshow):
+        if atributes is None:
+            query.append(f'({rel1_toquery})\\{operator}({rel2_toquery})')
+        else:
+            query.append(f'({rel1_toquery})\\{operator}{{{atributes}}}({rel2_toquery})')
+                  
+        query.append(format_binary_query(rel1_toshow, rel1_toshow))
+        return query
+
+    if isinstance(relation_1, str) and isinstance(relation_2, str):
+        return append_queries(relation_1, relation_2, relation_1, relation_2)
+    if isinstance(relation_1, list) and isinstance(relation_2, list):
+        return append_queries(relation_1[0], relation_2[0], relation_1[1], relation_2[1]) 
+    if isinstance(relation_1, list) and isinstance(relation_2, str):
+        return append_queries(relation_1[0], relation_2, relation_1[1], relation_2) 
+    if isinstance(relation_1, str) and isinstance(relation_2, list):
+        return append_queries(relation_1, relation_2[0], relation_1, relation_2[1])
+
+    return query
+
+            
 
 def CreateConsultfromOperators(operators):
     query_sufix = ''
@@ -157,7 +205,7 @@ def CreateConsultfromOperators(operators):
     binary = {
         '\u222A': 'union',
         '\u2212': 'diff',
-        '\u2212': 'intersect',
+        '\u2229': 'intersect',
         '\u2715': 'cross'
     }
 
@@ -169,8 +217,9 @@ def CreateConsultfromOperators(operators):
 
     if len(operators) > 0:
         operator = operators[0]
-        atributes_values = operator['atributes_values']
-        if operator['operator'] in unary:
+        operator_caractere = operator['operator'] 
+        if operator_caractere in unary:
+            atributes_values = operator['atributes_values']
             relation_value = operator['relation'][0]
             if isinstance(relation_value, int) and len(operators) != 1:
                 for i in range(0, (len(operators) - 1)):
@@ -178,11 +227,12 @@ def CreateConsultfromOperators(operators):
                         relation_value = CreateConsultfromOperators(
                             operatorsthread(operators, i+1))
                         break
-            operator_value = unary.get(operator['operator'])
+            operator_value = unary.get(operator_caractere)
             query_sufix = returnqueryUnary(
-                operator_value, atributes_values, relation_value)
+                operator_value, atributes_values, relation_value, operator_caractere)
         else:
             relations_values = operator['relation']
+            atributes_values = operator['atributes_values']
             for i in range(0, len(relations_values)):
                 if isinstance(relations_values[i], int):
                     for j in range(0, (len(operators) - 1)):
@@ -190,10 +240,10 @@ def CreateConsultfromOperators(operators):
                             relations_values[i] = CreateConsultfromOperators(
                                 operatorsthread(operators, j+1))
                             break
-            operator_value = binary.get(operator['operator'])
+            operator_value = binary.get(operator_caractere)
             query_sufix = returnqueryBinary(
-                operator_value, atributes_values, relations_values)
-
+                operator_value, atributes_values, relations_values, operator_caractere)
+       
     return query_sufix
 
 
@@ -201,11 +251,12 @@ def CreateConsultfromOperators(operators):
 async def consult():
     if 'session_init' in session:
         try:
-            query = f"{CreateConsultfromOperators(request.get_json())};"
+            consult_complete = CreateConsultfromOperators(request.get_json())
+            query = f"{consult_complete[0]};"
             requisition_queue.put([query, session['session_init'], 2])
             result = result_queue.get()
             result_formated = reform_consult(result)
-            return jsonify(result_formated)
+            return jsonify(result_formated, consult_complete[1])
         except Exception as e:
             print(e)
             return jsonify({'error': 'Ocorreu um erro durante a consulta'})
@@ -264,12 +315,8 @@ def colectinfofromtable():
         types = [row[2] for row in rows]
         info = {}
         if(requisition['type'] == 'includetuples'):
-            tuples = []
-            for row in rows:
-                result_row = []
-                for value in row:
-                    result_row.append(value)
-                tuples.append(result_row)
+            cursor.execute(f"SELECT * FROM {tablename}")
+            tuples = cursor.fetchall()
             info = {
                 "attributes": columns,
                 "types": types,
@@ -284,22 +331,23 @@ def colectinfofromtable():
 
 
 @app.route('/insert', methods=['POST'])
-def adddataontable():
+def insert():
     if 'session_init' in session:
-        tablename = ''
-        relations_details_structure = []
-        conn = sqlite3.connect(f"{str(session['session_init'])}.db")
-        cursor = conn.cursor()
-        tuples = request.get_json()
-        for table, info in tuples.items():
-            tablename = info['tablename']
-            for tuple in info["tuples"]:
-                placeholders = ", ".join(["?"] * len(tuple))
-                cursor.execute(
-                    f"INSERT INTO {tablename} VALUES ({placeholders})", tuple)
-        conn.commit()
-        conn.close()
         try:
+            tablename = ''
+            relations_details_structure = []
+            conn = sqlite3.connect(f"{str(session['session_init'])}.db")
+            cursor = conn.cursor()
+            tuples = request.get_json()
+            for table, info in tuples.items():
+                tablename = info['tablename']
+                for tuple in info["tuples"]:
+                    placeholders = ", ".join(["?"] * len(tuple))
+                    cursor.execute(
+                        f"INSERT INTO {tablename} VALUES ({placeholders})", tuple
+                    )
+            conn.commit()
+            conn.close()
             requisition_queue.put([f"radb {str(session['session_init'])}.db", session['session_init'], 2])
             result_queue.get()
             requisition_queue.put(['\list;', session['session_init'], 2])
@@ -310,13 +358,17 @@ def adddataontable():
                 if match:
                     nome_relacao = match.group(1).strip()
                     atributos_str = match.group(2)
-                    atributos = [atributo.strip()
-                                 for atributo in atributos_str.split(',')]
-                    relations_details_structure.append(
-                        [nome_relacao] + atributos)
+                    atributos = [atributo.strip() for atributo in atributos_str.split(',')]
+                    relations_details_structure.append([nome_relacao] + atributos)
+
             return jsonify([tuples, relations_details_structure])
+
         except Exception as e:
-            return jsonify({'erro': e})
+            return jsonify({'error': str(e)}), 500
+
+    else:
+        return jsonify({'error': 'Session not initialized'}), 400
+
 
 
 @app.route('/createdbfile', methods=['POST'])
@@ -370,15 +422,83 @@ def deletetable():
         conn = sqlite3.connect(f"{str(session['session_init'])}.db")
         cursor = conn.cursor()
         tablename = request.get_json()['tablename']
-        cursor.execute(f"DELETE FROM {tablename}")
+        cursor.execute(f"DROP TABLE IF EXISTS {tablename}")
         conn.commit()
         conn.close()
         return 'ok', 200
     
-    
-@app.route('/updatetable', methods = ['POST'])
-def updatetable():
-    return
+
+@app.route('/update', methods=['POST'])
+def update():
+    if 'session_init' in session:
+        data = request.get_json()
+        tablename = data['1']['tablename']
+        relations_details_structure = []
+        conn = sqlite3.connect(f"{str(session['session_init'])}.db")
+        cursor = conn.cursor()
+        cursor.execute(f"DELETE FROM {tablename}")
+        for table, info in data.items():
+                for tuple in info["tuples"]:
+                    placeholders = ", ".join(["?"] * len(tuple))
+                    cursor.execute(
+                        f"INSERT INTO {tablename} VALUES ({placeholders})", tuple
+                    )
+        conn.commit()
+        conn.close()
+        requisition_queue.put([f"radb {str(session['session_init'])}.db", session['session_init'], 2])
+        result_queue.get()
+        requisition_queue.put(['\list;', session['session_init'], 2])
+        result = result_queue.get()
+        relations_labels, tuples = reform_list(result, tablename)
+        for item in relations_labels:
+            match = re.match(r'(\w+)\((.*?)\)', item)
+            if match:
+                nome_relacao = match.group(1).strip()
+                atributos_str = match.group(2)
+                atributos = [atributo.strip() for atributo in atributos_str.split(',')]
+                relations_details_structure.append([nome_relacao] + atributos)
+
+        return jsonify([tuples, relations_details_structure])
+
+
+@app.route('/deletetuple', methods = ['POST'])
+def deletetuple():
+     if 'session_init' in session:
+        try:
+            conn = sqlite3.connect(f"{str(session['session_init'])}.db")
+            cursor = conn.cursor()
+            db =  request.get_json()
+            tablename = db['tablename']
+            relations_details_structure = []
+            tuples = db['tuples_to_delete']
+            for tuple_to_delete in tuples:
+                conditions = " AND ".join([f"{attribute} = ?" for attribute, value in tuple_to_delete])
+                values = [value for attribute, value in tuple_to_delete]
+                query = f"DELETE FROM {tablename} WHERE {conditions}"
+                cursor.execute(query, values)
+            conn.commit()
+            conn.close()
+            requisition_queue.put([f"radb {str(session['session_init'])}.db", session['session_init'], 2])
+            result_queue.get()
+            requisition_queue.put(['\list;', session['session_init'], 2])
+            result = result_queue.get()
+            relations_labels, tuples = reform_list(result, tablename)
+            for item in relations_labels:
+                    match = re.match(r'(\w+)\((.*?)\)', item)
+                    if match:
+                        nome_relacao = match.group(1).strip()
+                        atributos_str = match.group(2)
+                        atributos = [atributo.strip() for atributo in atributos_str.split(',')]
+                        relations_details_structure.append([nome_relacao] + atributos)
+
+            return jsonify([tuples, relations_details_structure])
+
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+     else:
+            return jsonify({'error': 'Session not initialized'}), 400
+        
      
 atexit.register(limpar_arquivos_session)
 atexit.register(clean_db_files)
