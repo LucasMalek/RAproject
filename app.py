@@ -175,11 +175,14 @@ def returnqueryBinary(operator, atributes, relation_structured, operator_code):
 
     def append_queries(rel1_toquery, rel2_toquery, rel1_toshow, rel2_toshow):
         if atributes is None:
-            query.append(f'({rel1_toquery})\\{operator}({rel2_toquery})')
+            if operator == 'assigment':
+                query.append(rel2_toquery)
+            else:
+                 query.append(f'({rel1_toquery})\\{operator}({rel2_toquery})')
         else:
             query.append(f'({rel1_toquery})\\{operator}{{{atributes}}}({rel2_toquery})')
                   
-        query.append(format_binary_query(rel1_toshow, rel1_toshow))
+        query.append(format_binary_query(rel1_toshow, rel2_toshow))
         return query
 
     if isinstance(relation_1, str) and isinstance(relation_2, str):
@@ -195,18 +198,19 @@ def returnqueryBinary(operator, atributes, relation_structured, operator_code):
 
             
 
-def CreateConsultfromOperators(operators):
+def CreateConsultfromOperators(operators, assigments = None):
     query_sufix = ''
     unary = {
         '\u03C3': 'select_',
         '\u03C0': 'project_',
-        '\u03C1': 'rename_'
+        '\u03C1': 'rename_',  
     }
     binary = {
         '\u222A': 'union',
         '\u2212': 'diff',
         '\u2229': 'intersect',
-        '\u2715': 'cross'
+        '\u2715': 'cross',
+        '\u2190': 'assigment'
     }
 
     def operatorsthread(operators_clone, index):
@@ -221,25 +225,44 @@ def CreateConsultfromOperators(operators):
         if operator_caractere in unary:
             atributes_values = operator['atributes_values']
             relation_value = operator['relation'][0]
+
+            operator_value = unary.get(operator_caractere)
             if isinstance(relation_value, int) and len(operators) != 1:
                 for i in range(0, (len(operators) - 1)):
                     if operators[i+1]['operatorindex'] == relation_value:
                         relation_value = CreateConsultfromOperators(
-                            operatorsthread(operators, i+1))
+                            operatorsthread(operators, i+1), assigments)
                         break
-            operator_value = unary.get(operator_caractere)
+                    
+            if isinstance(relation_value, str):
+                
+                relation_formulated = assigments.get(relation_value, False)
+                if relation_formulated !=  False:
+                    relation_value = relation_formulated
+                else:
+                    return f"Relação {relation_value} não existe!"
+                
             query_sufix = returnqueryUnary(
                 operator_value, atributes_values, relation_value, operator_caractere)
         else:
             relations_values = operator['relation']
             atributes_values = operator['atributes_values']
+            
             for i in range(0, len(relations_values)):
                 if isinstance(relations_values[i], int):
                     for j in range(0, (len(operators) - 1)):
                         if operators[j+1]['operatorindex'] == relations_values[i]:
                             relations_values[i] = CreateConsultfromOperators(
-                                operatorsthread(operators, j+1))
+                                operatorsthread(operators, j+1), assigments)
                             break
+                if isinstance(relations_values[i], str):
+                    if not operator_caractere == '\u2190' or operator_caractere == '\u2190' and i != 0:
+                        relation_formulated = assigments.get(relations_values[i], False)
+                        if relation_formulated !=  False:
+                            relations_values[i] = relation_formulated
+                        else:
+                            return f"Relação {relation_value} não existe!"
+                   
             operator_value = binary.get(operator_caractere)
             query_sufix = returnqueryBinary(
                 operator_value, atributes_values, relations_values, operator_caractere)
@@ -251,12 +274,34 @@ def CreateConsultfromOperators(operators):
 async def consult():
     if 'session_init' in session:
         try:
-            consult_complete = CreateConsultfromOperators(request.get_json())
-            query = f"{consult_complete[0]};"
-            requisition_queue.put([query, session['session_init'], 2])
-            result = result_queue.get()
-            result_formated = reform_consult(result)
-            return jsonify(result_formated, consult_complete[1])
+            assigments : Dict[str: str] = {}
+            consult_lines, tablenames = request.get_json()
+            consult_complete = []
+            all_results = []
+            
+            for table in tablenames:
+                assigments[table] = table
+                                    
+            for consult in consult_lines:
+                if isinstance(consult[0], str):
+                    assigments[consult[0]] = CreateConsultfromOperators(consult[1:], assigments)
+                else:
+                  consult_complete.append(CreateConsultfromOperators(consult, assigments))
+            
+            for table in tablenames:
+                assigments.pop(table)
+                
+            consult_complete.extend([valor for valor in assigments.values()])
+            
+            for consult in consult_complete:
+                query = f"{consult[0]};"
+                requisition_queue.put([query, session['session_init'], 2])
+                result = result_queue.get()
+                all_results.append([reform_consult(result), consult[1]])
+                
+            
+            return jsonify(all_results[len(all_results) - 1])
+        
         except Exception as e:
             print(e)
             return jsonify({'error': 'Ocorreu um erro durante a consulta'})

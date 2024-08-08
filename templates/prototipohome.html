@@ -84,6 +84,7 @@
             <button type="submit">
               <i class="fas fa-play" style="margin-right: 0.8rem; color: white;"></i>Consultar
             </button>
+            <button onclick="pegar()">Pegar</button>
           </div>
       </form>
       </div>
@@ -97,8 +98,7 @@
           <div class="titlecontainer">
             <h2>Resultado</h2>
             <div id="resultarea">
-              <div id="label"></div>
-              <div id="tuples"></div>
+              
             </div>
           </div>
         </div>
@@ -173,9 +173,10 @@ function initializesystem(db) {
     let last_tab = "consult";
     let last_tab_create_table = 1;
     let operators = [];
-    let selectedOperator = null
+    let selectedRelation = null
     let click_flag = false
     let createtableclone;
+    let tablenames = [];
 
 document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('#create_table_container').style.display = 'flex'
@@ -469,10 +470,23 @@ function tablistener() {
         })
     }
 
-function removeOperatorByIndex(index) {
-            for (let i = 0; i < operators.length; i++) {
-                if (operators[i].operatorindex == index) {
-                    console.log(operators[i].operatorindex)
+function removeOperatorByIndex(line, position) {
+            
+            operators[line][position].forEach(son => {
+                 if(typeof son === 'number'){
+                  operators[line].forEach(index, element => {
+                      if(element.operatorindex == son) {
+                        removeOperatorByIndex(line, index);
+                      }
+                  })
+                 }
+            })
+
+            operators[line].splice(position, 1);
+            
+            /*
+            for (let i = 0; i < operators[line].length; i++) {
+                if (operators[i].operatorindex == position) {
                     operators.splice(i, 1);
                     break;
                 }
@@ -483,13 +497,22 @@ function removeOperatorByIndex(index) {
                     }
                 }
             }
+              */
         }
 
 document.addEventListener('keydown', function(event) {
         if (event.key === 'Backspace') {
             const selectedOperatorcontainer = document.querySelector('.operator-container.selected');
+            const soncomplexrelation = selectedOperatorcontainer.querySelector('complex_relation');
             if (selectedOperatorcontainer) {
-                removeOperatorByIndex(selectedComplexRelation.getAttribute('index'))
+                if (soncomplexrelation) {
+                  let relation = document.createElement('input');
+                  relation.classList.add('simple_relation');
+                  relation.setAttribute('placeholder', 'R');
+                  relation.setAttribute('index', 0);
+                  selectedOperatorcontainer.replaceChild(relation, soncomplexrelation);
+                }
+                removeOperatorByIndex(selectedOperatorcontainer.getAttribute('line'), selectedOperatorcontainer.getAttribute('position'));
                 selectedComplexRelation.remove();
             }
         }
@@ -523,9 +546,13 @@ document.addEventListener('click', function(event) {
             }
         });
 
-function createOperatorContainer(operator) {
+function createOperatorContainer(operator, line, position) {
+
   const operatorContainer = document.createElement('div');
   operatorContainer.classList.add('operator-container');
+
+  operatorContainer.setAttribute('line', line);
+  operatorContainer.setAttribute('position', position);
 
   const operatorElement = document.createElement('div');
   operatorElement.setAttribute('class', 'operator-symbol');
@@ -543,7 +570,7 @@ function createOperatorContainer(operator) {
   let relation = document.createElement('input');
   relation.classList.add('simple_relation');
   relation.setAttribute('placeholder', 'R');
-  relation.setAttribute('owner', (operators.length))
+
   relation.setAttribute('index', 0)
 
   relationArea.appendChild(parenteses_1);
@@ -567,14 +594,13 @@ function createOperatorContainer(operator) {
           attributeValueContainer.appendChild(input_atributes);
       } else {
           secondrelationArea = relationArea.cloneNode(true);
-          relation.setAttribute('index', 1);
-          secondrelationArea.querySelector('.simple_relation').setAttribute('index', 0);
           if(operator == "\u2190") {
-            relation.classList.add('assignment');
             variable = secondrelationArea.querySelector('.simple_relation');
             variable.classList.add('variable');
             variable.setAttribute('placeholder', 'Nome da variável');
           }
+          relation.setAttribute('index', 1);
+          secondrelationArea.querySelector('.simple_relation').setAttribute('index', 0);
           operatorContainer.appendChild(secondrelationArea);
       }
   } else {
@@ -591,8 +617,8 @@ function createOperatorContainer(operator) {
 
 
 document.addEventListener('click', function(event) {
-  selectedOperator = event.target.closest('.simple_relation');
-  if (selectedOperator) {
+  selectedRelation = event.target.closest('.simple_relation');
+  if (selectedRelation) {
       click_flag = true;
   }
 });
@@ -608,41 +634,60 @@ function addOperator(operator) {
   let container;
 
   if (operators.length > 0 && operator != "\u2190") {
-      if (selectedOperator) {
+      if (selectedRelation) {
+          let selectedOperator = selectedRelation;
+          while (selectedOperator && !selectedOperator.classList.contains('operator-container')) {
+            selectedOperator = selectedOperator.parentNode;
+          }
           const complex_input = document.createElement('div');
           complex_input.classList.add('complex_relation');
-          var complex_relations = Array.from(document.querySelectorAll('.complex_relation'));
-          var complex_index = complex_relations.length;
-          complex_input.setAttribute('index', complex_index);
-          reference = selectedOperator.getAttribute('owner');
-          index = selectedOperator.getAttribute('index');
-          newOperator.operatorindex = complex_index;
-          operators[reference].relation[index] = complex_index;
-          selectedOperator.parentNode.replaceChild(complex_input, selectedOperator);
-          complex_input.appendChild(createOperatorContainer(operator));
+          console.log(selectedRelation.parentNode);
+          selectedRelation.parentNode.replaceChild(complex_input, selectedRelation);
+          position = selectedOperator.getAttribute('position');
+          let newoperatorposition = parseInt(position) + 1;
+          index = selectedRelation.getAttribute('index');
+          line = parseInt(selectedOperator.getAttribute('line'));
+          newOperator.operatorindex = newoperatorposition;
+          operators[line][position].relation[index] = newoperatorposition;
+          complex_input.appendChild(createOperatorContainer(operator, line, newoperatorposition));
+          operators[line].push(newOperator);
       }
   } else {
       container = document.querySelector('.consult_interface');
-      container.appendChild(createOperatorContainer(operator));
+      if(operator == "\u2190") {
+        container.appendChild(createOperatorContainer(operator, operators.length, 1));
+        operators.push([null, newOperator]);
+        
+      }else {
+        container.appendChild(createOperatorContainer(operator, operators.length, 0));
+        operators.push([newOperator]);
+      }
   }
 
-  operators.push(newOperator);
 
-  document.querySelectorAll('.operator-container').forEach((operatorContainer, index) => {
+  document.querySelectorAll('.operator-container').forEach((operatorContainer) => {
+      let line = parseInt(operatorContainer.getAttribute('line'));
+      let position = parseInt(operatorContainer.getAttribute('position'));
       let attributevaluecontainer = operatorContainer.querySelector(':scope > .attribute-value-container');
       let inputAttributes;
       if (attributevaluecontainer) {
           inputAttributes = attributevaluecontainer.querySelector(':scope > .input-atributes');
       }
       let relationAreas = operatorContainer.querySelectorAll(':scope > .relationArea');
-      inputAttributes?.addEventListener('input', () => operators[index].atributes_values = inputAttributes.value);
+      inputAttributes?.addEventListener('input', () => operators[line][position].atributes_values = inputAttributes.value);
       relationAreas.forEach(relationArea => {
           let simpleRelations = relationArea.querySelectorAll(':scope > .simple_relation');
           if (simpleRelations) {
               simpleRelations.forEach(element => {
                   element.addEventListener('input', function () {
-                      simplerelationindex = element.getAttribute('index');
-                      operators[index].relation[simplerelationindex] = element.value;
+                      if(element.classList.contains('variable')) {
+                        operators[line][0] = element.value;
+                        simplerelationindex = element.getAttribute('index');
+                        operators[line][position].relation[simplerelationindex] = element.value;
+                      }else {
+                        simplerelationindex = element.getAttribute('index');
+                        operators[line][position].relation[simplerelationindex] = element.value;
+                      }
                   });
               });
           }
@@ -651,17 +696,19 @@ function addOperator(operator) {
 }
 
 document.getElementById('consult_form').addEventListener('submit', function(e) {
+      
             e.preventDefault();
-            let resultarea = document.querySelector('#result');
+            let result = document.querySelector('#result');
             let historicarea = document.querySelector('#historic');
             let userconsult = document.querySelector('.consult_interface');
+            historic_consults = [];
 
             fetch('/consult', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                   },
-                body: JSON.stringify(operators)  
+                body: JSON.stringify([operators, tablenames])  
             }).then(
                 response => {
                     if (!response.ok) {
@@ -671,16 +718,34 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
                     }
                 }
             ).then(data => {
+                last_response = document.querySelector('#resultarea').cloneNode(true)
+                newresultarea = document.createElement('div');
+                newresultarea.setAttribute('id', 'resultarea');
+
                 let labels = data[0][0]
                 let tuples = data[0][1]
 
                 text = document.createElement('div');
-                text.className = 'text_query_container'
+                text.className = 'text_query_container';
                 text.innerHTML = data[1]
-                historicarea.appendChild(text)
-                text.style.marginTop = '4rem'
+                
+                Array.from(historicarea.children).forEach(child => {
+                  if(child && !child.classList.contains('titlecontainer')) {
+                    historic_consults.push(child);
+                    child.remove();
+                  }
+                })
+
+                historicarea.appendChild(text);
+
+                historic_consults.forEach(element => {
+                    historicarea.appendChild(element)
+                })
+
+                text.style.marginTop = '1rem'
                 text.style.marginBottom = '1rem';
-                resultarea.appendChild(text)
+                text.style.height = 'fit-content';
+                newresultarea.appendChild(text.cloneNode(true));
 
                 let table_tag = document.createElement('table');
                 table_tag.style.height = 'fit-content';
@@ -708,7 +773,13 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
                   tbody.appendChild(row)
                 }
 
-                resultarea.appendChild(table_tag)
+                newresultarea.appendChild(table_tag);
+                Array.from(result.children).forEach(child => {
+                  if(child && !child.classList.contains('titlecontainer')) {
+                    child.remove();
+                  }
+                })
+                result.appendChild(newresultarea);
 
             }).catch(error => {
                 console.log(error);
@@ -717,6 +788,7 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
 
 
 function printdbtables(data, requisition) {
+          tablenames = [];
           const [tuples, labelsData] = data;
           relations_container = document.querySelector('#bd');
           loadercircle = document.createElement('div');
@@ -1001,6 +1073,7 @@ function printdbtables(data, requisition) {
               let tbody = document.createElement('tbody');
 
               table_name.textContent = table[0];
+              tablenames.push(table[0]);
               table_container.appendChild(table_extension_container);
               table_container.appendChild(table_name);
 
@@ -1219,10 +1292,14 @@ function sendbdtocreate(route) {
             printdbtables(db, `${route}`)
           })
         }
-      }     
+      }    
+      
+      
+function pegar() {
+  console.log(operators)
+}
 
 function operator_impression(operator) {
-           
             if(click_flag == true || operators.length == 0 || operator == "\u2190") {
                 click_flag = false
                 addOperator(operator);
