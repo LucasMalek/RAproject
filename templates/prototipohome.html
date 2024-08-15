@@ -84,7 +84,7 @@
             <button type="submit">
               <i class="fas fa-play" style="margin-right: 0.8rem; color: white;"></i>Consultar
             </button>
-            <button onclick="pegar()">Pegar</button>
+            <button type = "button" onclick="pegar()">Pegar</button>
           </div>
       </form>
       </div>
@@ -97,9 +97,6 @@
         <div id="result">
           <div class="titlecontainer">
             <h2>Resultado</h2>
-            <div id="resultarea">
-              
-            </div>
           </div>
         </div>
       </div>
@@ -177,6 +174,7 @@ function initializesystem(db) {
     let click_flag = false
     let createtableclone;
     let tablenames = [];
+    let historic_results = [];
 
 document.addEventListener('DOMContentLoaded', () => {
         document.querySelector('#create_table_container').style.display = 'flex'
@@ -470,52 +468,72 @@ function tablistener() {
         })
     }
 
-function removeOperatorByIndex(line, position) {
-            
-            operators[line][position].forEach(son => {
-                 if(typeof son === 'number'){
-                  operators[line].forEach(index, element => {
-                      if(element.operatorindex == son) {
-                        removeOperatorByIndex(line, index);
-                      }
-                  })
-                 }
-            })
-
-            operators[line].splice(position, 1);
-            
-            /*
-            for (let i = 0; i < operators[line].length; i++) {
-                if (operators[i].operatorindex == position) {
-                    operators.splice(i, 1);
-                    break;
-                }
-                if(operators[i].relation.includes(index)) {
-                    let index_to_remove = operators[i].relation.indexOf(index);
-                    if (index_to_remove !== -1) {
-                        operators[i].relation.splice(index_to_remove, 1);
+function removeOperatorByIndex(line, position, father) {
+                        
+              if (father != null) {
+                fatherposition = father.getAttribute('position');
+                for (let [index, element] of operators[line][fatherposition].relation.entries()) {
+                    if (element == position) {
+                        operators[line][fatherposition].relation[index] = null;
+                        break;
                     }
                 }
             }
-              */
+
+            for (let son of operators[line][position].relation) {
+              if (son && typeof son === 'number') {
+                  for (let [index, element] of operators[line].entries()) {
+                      if (element.operatorindex == son) {
+                          removeOperatorByIndex(line, index, null);
+                      }
+                  }
+              }
+          }
+              operators[line].splice(position, 1);
+              if(operators[line].length == 0){
+                console.log(operators);
+                operators.splice(line, 1);
+                console.log(operators)
+              }
         }
 
 document.addEventListener('keydown', function(event) {
-        if (event.key === 'Backspace') {
-            const selectedOperatorcontainer = document.querySelector('.operator-container.selected');
-            const soncomplexrelation = selectedOperatorcontainer.querySelector('complex_relation');
-            if (selectedOperatorcontainer) {
-                if (soncomplexrelation) {
-                  let relation = document.createElement('input');
-                  relation.classList.add('simple_relation');
-                  relation.setAttribute('placeholder', 'R');
-                  relation.setAttribute('index', 0);
-                  selectedOperatorcontainer.replaceChild(relation, soncomplexrelation);
-                }
-                removeOperatorByIndex(selectedOperatorcontainer.getAttribute('line'), selectedOperatorcontainer.getAttribute('position'));
-                selectedComplexRelation.remove();
+        const selectedOperatorcontainer = document.querySelector('.operator-container.selected');
+        if (event.key === 'Backspace' && selectedOperatorcontainer) {
+            let selectedOperatorfather = selectedOperatorcontainer.parentNode;
+            while(!selectedOperatorfather.classList.contains('operator-container')) {
+              if(selectedOperatorfather.classList.contains('consult_interface')) {
+                selectedOperatorfather = null
+                break
+              }
+              else{
+                selectedOperatorfather = selectedOperatorfather.parentNode;
+              }
             }
+            if(selectedOperatorfather != null) {
+                 let relationArea;
+                 let soncomplexrelation = null;
+                 selectedOperatorfather.querySelectorAll(':scope > .relationArea').forEach(element => {
+                  soncomplexrelation = element.querySelector('.complex_relation');
+                  if(soncomplexrelation && soncomplexrelation.contains(selectedOperatorcontainer)) {
+                       relationArea = element;
+                  }else {
+                    soncomplexrelation = null;
+                  }
+              });
+              if (soncomplexrelation) {
+                let relation = document.createElement('input');
+                relation.classList.add('simple_relation');
+                relation.setAttribute('placeholder', 'R');
+                relation.setAttribute('index', parseInt(soncomplexrelation.getAttribute('index')));
+                relationArea.replaceChild(relation, soncomplexrelation);
+              }
+            }else {
+              selectedOperatorcontainer.remove();
+            }
+            removeOperatorByIndex(selectedOperatorcontainer.getAttribute('line'), selectedOperatorcontainer.getAttribute('position'), selectedOperatorfather);
         }
+        operatorspropertieslisteners();
     });
 
 document.addEventListener('click', function(event) {
@@ -615,7 +633,6 @@ function createOperatorContainer(operator, line, position) {
   return operatorContainer;
 }
 
-
 document.addEventListener('click', function(event) {
   selectedRelation = event.target.closest('.simple_relation');
   if (selectedRelation) {
@@ -641,11 +658,11 @@ function addOperator(operator) {
           }
           const complex_input = document.createElement('div');
           complex_input.classList.add('complex_relation');
-          console.log(selectedRelation.parentNode);
           selectedRelation.parentNode.replaceChild(complex_input, selectedRelation);
           position = selectedOperator.getAttribute('position');
           let newoperatorposition = parseInt(position) + 1;
           index = selectedRelation.getAttribute('index');
+          complex_input.setAttribute('index', index);
           line = parseInt(selectedOperator.getAttribute('line'));
           newOperator.operatorindex = newoperatorposition;
           operators[line][position].relation[index] = newoperatorposition;
@@ -664,127 +681,252 @@ function addOperator(operator) {
       }
   }
 
+    operatorspropertieslisteners();
+ 
+}
 
+function operatorspropertieslisteners() {
   document.querySelectorAll('.operator-container').forEach((operatorContainer) => {
-      let line = parseInt(operatorContainer.getAttribute('line'));
-      let position = parseInt(operatorContainer.getAttribute('position'));
-      let attributevaluecontainer = operatorContainer.querySelector(':scope > .attribute-value-container');
-      let inputAttributes;
-      if (attributevaluecontainer) {
-          inputAttributes = attributevaluecontainer.querySelector(':scope > .input-atributes');
-      }
-      let relationAreas = operatorContainer.querySelectorAll(':scope > .relationArea');
-      inputAttributes?.addEventListener('input', () => operators[line][position].atributes_values = inputAttributes.value);
-      relationAreas.forEach(relationArea => {
-          let simpleRelations = relationArea.querySelectorAll(':scope > .simple_relation');
-          if (simpleRelations) {
-              simpleRelations.forEach(element => {
-                  element.addEventListener('input', function () {
-                      if(element.classList.contains('variable')) {
-                        operators[line][0] = element.value;
-                        simplerelationindex = element.getAttribute('index');
-                        operators[line][position].relation[simplerelationindex] = element.value;
-                      }else {
-                        simplerelationindex = element.getAttribute('index');
-                        operators[line][position].relation[simplerelationindex] = element.value;
-                      }
-                  });
-              });
-          }
+    let line = parseInt(operatorContainer.getAttribute('line'));
+    let position = parseInt(operatorContainer.getAttribute('position'));
+    let attributevaluecontainer = operatorContainer.querySelector(':scope > .attribute-value-container');
+    let inputAttributes;
+    if (attributevaluecontainer) {
+      inputAttributes = attributevaluecontainer.querySelector(':scope > .input-atributes');
+    }
+    let relationAreas = operatorContainer.querySelectorAll(':scope > .relationArea');
+
+    if (inputAttributes && !inputAttributes.getAttribute('listener-added')) {
+      inputAttributes.setAttribute('listener-added', 'true');
+      inputAttributes.addEventListener('input', () => {
+        operators[line][position].atributes_values = inputAttributes.value;
       });
+    }
+
+    relationAreas.forEach(relationArea => {
+      let simpleRelations = relationArea.querySelectorAll(':scope > .simple_relation');
+      if (simpleRelations) {
+        simpleRelations.forEach(element => {
+          if (!element.getAttribute('listener-added')) {
+            element.addEventListener('input', function () {
+              simplerelationindex = element.getAttribute('index');
+              if (element.classList.contains('variable')) {
+                operators[line][0] = element.value;
+              }
+              operators[line][position].relation[simplerelationindex] = element.value;
+            });
+            element.setAttribute('listener-added', 'true');
+          }
+        });
+      }
+    });
   });
 }
 
-document.getElementById('consult_form').addEventListener('submit', function(e) {
+document.getElementById('consult_form').addEventListener('submit', function(e) {      
+  e.preventDefault();
+  let result = document.querySelector('#result');
+  let historicarea = document.querySelector('#historic');
+  let userconsult = document.querySelector('.consult_interface');
+  let titlearea = result.querySelector('.titlecontainer');
+
+  let historic_consults = [];
+
+  fetch('/consult', {
+      method: 'POST',
+      headers: {
+          'Content-Type': 'application/json'
+      },
+      body: JSON.stringify([operators, tablenames])  
+  }).then(response => {
+      if (!response.ok) {
+        return response.json().then(error => { throw new Error(error.error); });
+      } else {
+          return response.json();
+      }
+  }).then(data => {
+      let last_line_button_container = titlearea.querySelector('.line_button_container');
+      if (last_line_button_container) {
+          last_line_button_container.remove();
+      }
+
+      let line_button_container = document.createElement('div');
+      line_button_container.className = 'line_button_container';
+      let lastline;
+      let all_lines_text = [];
+
+      for (let [index, line] of data.entries()) {
+          let line_button = document.createElement('BUTTON');
+          line_button.className = 'line_button';
+          line_button.textContent = `${index}`;
+          line_button_container.appendChild(line_button);
+          let [line_result, line_text] = resultlines(line, result, historicarea, userconsult, titlearea);
+          if (index == data.length - 1) {
+              lastline = line_result;
+          }
+          all_lines_text.push(line_text); 
+          line_button.onclick = function() {
+              Array.from(result.children).forEach(child => {
+                  if (child && !child.classList.contains('titlecontainer')) {
+                      child.remove();
+                  }
+              });
+              result.appendChild(line_result);
+          };
+      }
+
+      const text_query_historic_container = document.createElement('div');
+      text_query_historic_container.className = 'text_query_historic_container';
+
+      const search_query_button = document.createElement('BUTTON'); 
+      search_query_button.className = 'historic_buttons';
+      search_query_button.innerHTML = '<i class="fas fa-play"></i>';
+      search_query_button.setAttribute('searchindex', historic_results.length);
       
-            e.preventDefault();
-            let result = document.querySelector('#result');
-            let historicarea = document.querySelector('#historic');
-            let userconsult = document.querySelector('.consult_interface');
-            historic_consults = [];
+      const erase_query_button = document.createElement('BUTTON');
+      erase_query_button.className = 'historic_buttons';
+      erase_query_button.innerHTML = '<i class="fas fa-trash"></i>';
+      erase_query_button.setAttribute('searchindex', historic_results.length);
 
-            fetch('/consult', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                  },
-                body: JSON.stringify([operators, tablenames])  
-            }).then(
-                response => {
-                    if (!response.ok) {
-                        throw new Error('Erro na requisição');
-                    } else {
-                        return response.json();
-                    }
-                }
-            ).then(data => {
-                last_response = document.querySelector('#resultarea').cloneNode(true)
-                newresultarea = document.createElement('div');
-                newresultarea.setAttribute('id', 'resultarea');
+      historic_results.push([historic_results.length, lastline, line_button_container]);
 
-                let labels = data[0][0]
-                let tuples = data[0][1]
-
-                text = document.createElement('div');
-                text.className = 'text_query_container';
-                text.innerHTML = data[1]
-                
-                Array.from(historicarea.children).forEach(child => {
-                  if(child && !child.classList.contains('titlecontainer')) {
-                    historic_consults.push(child);
-                    child.remove();
+      search_query_button.onclick = function() {
+          historic_results.forEach(element => {
+              if (element[0] == parseInt(this.getAttribute('searchindex'))) {
+                  Array.from(result.children).forEach(child => {
+                      if (child && !child.classList.contains('titlecontainer')) {
+                          child.remove();
+                      }
+                  });
+                  result.appendChild(element[1]);
+                  title = titlearea.querySelector('.line_button_container');
+                  if(title) {
+                    title.remove();
                   }
-                })
+                  titlearea.appendChild(element[2]);
+              }
+          });
+      };
 
-                historicarea.appendChild(text);
+      erase_query_button.onclick = function() {
+          let searchIndex = parseInt(this.getAttribute('searchindex'));
+          let elementToRemove = historic_results.find(element => element[0] === searchIndex);
+          if (result.contains(elementToRemove[1])) {
+              elementToRemove[1].remove();
+          }
+          if (titlearea.contains(elementToRemove[2])) {
+              elementToRemove[2].remove();
+          }
+          historic_results = historic_results.filter(element => element[0] !== searchIndex);
+          this.parentNode.parentNode.remove();
+      };
 
-                historic_consults.forEach(element => {
-                    historicarea.appendChild(element)
-                })
+      const historic_buttons_container = document.createElement('div');
+      historic_buttons_container.className = 'historic_buttons_container';
 
-                text.style.marginTop = '1rem'
-                text.style.marginBottom = '1rem';
-                text.style.height = 'fit-content';
-                newresultarea.appendChild(text.cloneNode(true));
+      const text_query_historic_container_header =  document.createElement('div');
+      text_query_historic_container_header.className = 'historic_container_header';
+      
+      const query_number =  document.createElement('div');
+      query_number.className = 'query_number';
+      query_number.setAttribute('index', historic_results.length);
+      query_number.textContent = `Consulta ${historic_results.length}`;
 
-                let table_tag = document.createElement('table');
-                table_tag.style.height = 'fit-content';
-                let thead = document.createElement('thead');
-                let tbody = document.createElement('tbody');
-                let header_row = document.createElement('tr');
-                
-                for (let attribute_name of labels) {
-                    let th = document.createElement('th');
-                    th.textContent = attribute_name;
-                    header_row.appendChild(th);
-                }
+      const query_date = new Date();
+      const query_date_text = query_date.toLocaleString(); 
+      const query_date_text_container = document.createElement('div');
+      query_date_text_container.className = 'query_date';
+      query_date_text_container.textContent = query_date_text;
 
-                thead.appendChild(header_row);
-                table_tag.appendChild(thead);
-                table_tag.appendChild(tbody);
+      historic_buttons_container.appendChild(search_query_button);
+      historic_buttons_container.appendChild(erase_query_button);
 
-                for(tuple of tuples){
-                  let row = document.createElement('tr');
-                  for(attribute_value of tuple){
-                    let tuplevalue = document.createElement('td')
-                    tuplevalue.textContent = attribute_value;
-                    row.appendChild(tuplevalue)
-                  }
-                  tbody.appendChild(row)
-                }
+      text_query_historic_container_header.appendChild(query_number);
+      text_query_historic_container_header.appendChild(query_date_text_container);
+      
+      text_query_historic_container.appendChild(text_query_historic_container_header);
 
-                newresultarea.appendChild(table_tag);
-                Array.from(result.children).forEach(child => {
-                  if(child && !child.classList.contains('titlecontainer')) {
-                    child.remove();
-                  }
-                })
-                result.appendChild(newresultarea);
+      all_lines_text.forEach(line_text => {
+          const container_case_overflow =  document.createElement('div');
+          container_case_overflow.className = 'container_case_overflow';
+          container_case_overflow.appendChild(line_text);
+          const elipses = document.createElement('div');
+          elipses.className = 'elipses';
+          elipses.textContent = '...';
+          text_query_historic_container.appendChild(container_case_overflow);
+      });
+      
+      text_query_historic_container.appendChild(historic_buttons_container);
 
-            }).catch(error => {
-                console.log(error);
-            });
-        });
+      Array.from(historicarea.children).forEach(child => {
+          if (child && !child.classList.contains('titlecontainer')) {
+              historic_consults.push(child);
+              child.remove();
+          }
+      });
+
+      historicarea.appendChild(text_query_historic_container);
+
+      historic_consults.forEach(element => {
+          historicarea.appendChild(element);
+      });
+
+      titlearea.appendChild(line_button_container);
+      search_query_button.click();
+  }).catch(error => {
+      alert(error.message)
+  });
+
+});
+
+
+function resultlines(data, result, historicarea, userconsult, titlearea) {
+  let newresultarea = document.createElement('div');
+  newresultarea.setAttribute('id', 'resultarea');
+
+  let labels = data[0][0];
+  let tuples = data[0][1];
+  
+  let text_query = document.createElement('div');
+  text_query.className = 'text_query';
+  text_query.innerHTML = data[1];
+
+  let text_query_display_consult = text_query.cloneNode(true);
+  text_query_display_consult.style.width = '100%';
+  text_query_display_consult.style.justifyContent = 'center';
+  text_query_display_consult.style.marginLeft = '0';
+  text_query_display_consult.style.marginBottom = '1rem';
+  newresultarea.appendChild(text_query_display_consult);
+
+  let table_tag = document.createElement('table');
+  table_tag.style.height = 'fit-content';
+  let thead = document.createElement('thead');
+  let tbody = document.createElement('tbody');
+  let header_row = document.createElement('tr');
+  
+  for (let attribute_name of labels) {
+      let th = document.createElement('th');
+      th.textContent = attribute_name;
+      header_row.appendChild(th);
+  }
+
+  thead.appendChild(header_row);
+  table_tag.appendChild(thead);
+  table_tag.appendChild(tbody);
+
+  for (let tuple of tuples) {
+      let row = document.createElement('tr');
+      for (let attribute_value of tuple) {
+          let tuplevalue = document.createElement('td');
+          tuplevalue.textContent = attribute_value;
+          row.appendChild(tuplevalue);
+      }
+      tbody.appendChild(row);
+  }
+
+  newresultarea.appendChild(table_tag);
+  return [newresultarea, text_query];
+}
 
 
 function printdbtables(data, requisition) {
@@ -1293,7 +1435,6 @@ function sendbdtocreate(route) {
           })
         }
       }    
-      
       
 function pegar() {
   console.log(operators)

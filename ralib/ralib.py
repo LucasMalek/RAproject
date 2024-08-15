@@ -90,6 +90,8 @@ class RA:
     def executa_consulta_ra(self, query):
         output = StringIO()
         sys.stdout = output
+        error_message = None
+
         try:
             ast = one_statement_from_string(query)
             logger.info('statement parsed:')
@@ -97,8 +99,15 @@ class RA:
             ast.validate(self.context)
             logger.info('statement validated:')
             ast.execute(self.context)
-            return output.getvalue()
         except (ParsingError, ValidationError, ExecutionError) as e:
-            print('Error executing query:', e)
+            error_message = f'Error executing query: {str(e)}'
+            print(error_message)
         finally:
             sys.stdout = sys.__stdout__
+        
+        result = output.getvalue()
+        if error_message:
+            result += f"\n{error_message}"
+        
+        return result
+

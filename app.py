@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, session, jsonify, url_for
+from flask import Flask, request, render_template, session, jsonify, make_response
 from flask_session import Session
 import queue
 import threading
@@ -196,10 +196,45 @@ def returnqueryBinary(operator, atributes, relation_structured, operator_code):
 
     return query
 
-            
+def validateattributes(attributes, type):
+  
+  if not attributes:
+      return "A expressão de atributos não pode estar vazia!"  
+    
+  if type == 'attribute+value':
+     pattern = r'^(\s*\w+\s*=\s*[^,]+)(\s*,\s*\w+\s*=\s*[^,]+)*\s*$'
+     match = re.match(pattern, attributes)
+     if match:
+        return True, None
+     else:
+        if not re.search(r'\w+\s*=\s*\w+', attributes):
+            return "Erro: Nenhum par 'atributo = valor' encontrado."
+        
+        if re.search(r'\w+\s*=\s*\w+,\s*\w+\s*=\s*$', attributes):
+            return "Erro: Vírgula extra no final."
+        
+        if re.search(r'\w+\s*=\s*[^,]*$', attributes):
+            return "Erro: Atributo ou valor ausente após '='"
+        
+        if re.search(r'\w+\s*=\s*\w+[^,]\s*$', attributes):
+            return "Erro: Faltando vírgula entre pares de 'atributo = valor'."
+        
+        return False, 'Formato inválido. Use "atributo = valor" e se necessário separe múltiplos pares com vírgulas.'
+     
+  elif type == 'attribute':        
+     pattern = r'^(\s*\w+\s*)(\s*,\s*\w+\s*)*$'
+     match = re.match(pattern, attributes)
+     if match:
+        return True, None
+     else:
+        if re.search(r',\s*$', attributes):
+         return "Erro: Vírgula extra no final."
+        
+        return False, 'Formato inválido. Use "atributo1, atributo2..." ou apenas "atributo". Lembre-se, caso tenha mais de um atributo, use apenas uma vírgula entre eles!'
 
 def CreateConsultfromOperators(operators, assigments = None):
     query_sufix = ''
+    print(operators)
     unary = {
         '\u03C3': 'select_',
         '\u03C0': 'project_',
@@ -221,11 +256,11 @@ def CreateConsultfromOperators(operators, assigments = None):
 
     if len(operators) > 0:
         operator = operators[0]
-        operator_caractere = operator['operator'] 
+        operator_caractere = operator['operator']
+        atributes_values = operator['atributes_values']
+        validateattributes(atributes_values)
         if operator_caractere in unary:
-            atributes_values = operator['atributes_values']
             relation_value = operator['relation'][0]
-
             operator_value = unary.get(operator_caractere)
             if isinstance(relation_value, int) and len(operators) != 1:
                 for i in range(0, (len(operators) - 1)):
@@ -235,19 +270,16 @@ def CreateConsultfromOperators(operators, assigments = None):
                         break
                     
             if isinstance(relation_value, str):
-                
                 relation_formulated = assigments.get(relation_value, False)
                 if relation_formulated !=  False:
                     relation_value = relation_formulated
                 else:
-                    return f"Relação {relation_value} não existe!"
+                    return ['error', f"Relação {relation_value} não existe!"]
                 
             query_sufix = returnqueryUnary(
                 operator_value, atributes_values, relation_value, operator_caractere)
         else:
             relations_values = operator['relation']
-            atributes_values = operator['atributes_values']
-            
             for i in range(0, len(relations_values)):
                 if isinstance(relations_values[i], int):
                     for j in range(0, (len(operators) - 1)):
@@ -261,7 +293,7 @@ def CreateConsultfromOperators(operators, assigments = None):
                         if relation_formulated !=  False:
                             relations_values[i] = relation_formulated
                         else:
-                            return f"Relação {relation_value} não existe!"
+                            return ['error', f"Relação {relations_values[i]} não existe!"]
                    
             operator_value = binary.get(operator_caractere)
             query_sufix = returnqueryBinary(
@@ -282,11 +314,21 @@ async def consult():
             for table in tablenames:
                 assigments[table] = table
                                     
-            for consult in consult_lines:
+            for index, consult in enumerate(consult_lines):
+                intermediate_response = []
                 if isinstance(consult[0], str):
-                    assigments[consult[0]] = CreateConsultfromOperators(consult[1:], assigments)
+                    intermediate_response = CreateConsultfromOperators(consult[1:], assigments)
+                    if(intermediate_response[0] != 'error'):
+                     assigments[consult[0]] = intermediate_response
+                    else:
+                        return make_response(jsonify({'error': f"Linha {index + 1}: {intermediate_response[1]}"}), 400)
                 else:
-                  consult_complete.append(CreateConsultfromOperators(consult, assigments))
+                  intermediate_response = CreateConsultfromOperators(consult, assigments)
+                  if(intermediate_response[0] != 'error'):
+                   consult_complete.append(intermediate_response)
+                  else:
+                    return make_response(jsonify({'error': f"Linha {index + 1}: {intermediate_response[1]}"}), 400)  
+                  
             
             for table in tablenames:
                 assigments.pop(table)
@@ -298,15 +340,14 @@ async def consult():
                 requisition_queue.put([query, session['session_init'], 2])
                 result = result_queue.get()
                 all_results.append([reform_consult(result), consult[1]])
-                
             
-            return jsonify(all_results[len(all_results) - 1])
+            return jsonify(all_results)
         
         except Exception as e:
             print(e)
-            return jsonify({'error': 'Ocorreu um erro durante a consulta'})
+            return make_response(jsonify({'error': 'Ocorreu um erro durante a consulta'}), 500)
     else:
-        return jsonify({'error': 'Você precisa definir o banco de dados primeiro!'})
+         return make_response(jsonify({'error': 'Você precisa definir o banco de dados primeiro!'}), 400)
 
 
 @app.route('/loadfile', methods=['GET', 'POST'])
@@ -413,7 +454,6 @@ def insert():
 
     else:
         return jsonify({'error': 'Session not initialized'}), 400
-
 
 
 @app.route('/createdbfile', methods=['POST'])
