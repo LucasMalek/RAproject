@@ -14,10 +14,10 @@ import sys
 import logging
 logger = logging.getLogger('ra')
 
-
 class RA:
 
     def __init__(self, db_file_name=None):
+        self.db = None  # Atributo da instância para o banco de dados
 
         sys_configfile = os.path.join(os.path.dirname(
             os.path.abspath(__file__)), 'sys.ini')
@@ -71,12 +71,12 @@ class RA:
         if db_file_name is not None:
             configured['db.database'] = db_file_name
         try:
-            db = DB(configured)
+            self.db = DB(configured)  # Armazena a conexão no atributo da instância
         except Exception as e:
             logger.error('failed to connect to database: {}'.format(e))
             sys.exit(1)
 
-          # Inicializar o sistema de verificação de tipos
+        # Inicializar o sistema de verificação de tipos
         try:
             check = ValTypeChecker(
                 configured['default_functions'], configured.get('functions', None))
@@ -85,13 +85,43 @@ class RA:
             sys.exit(1)
 
         # construct context (starting with empty view collection):
-        self.context = Context(configured, db, check, ViewCollection())
+        self.context = Context(configured, self.db, check, ViewCollection())
+        
+        
+    def translate_to_portuguese(self, mensagem_erro):
+        if "ParsingError" in mensagem_erro:
+            return "Erro de Parsing: Verifique a sintaxe da consulta."
+        elif "ValidationError" in mensagem_erro:
+            node_start = mensagem_erro.find("in") + 3
+            node_end = mensagem_erro.find(":", node_start)
+            node = mensagem_erro[node_start:node_end].strip()
+            message_start = node_end + 2
+            message_end = mensagem_erro.find("context:", message_start)
+            if message_end == -1:
+                message_end = len(mensagem_erro)
+            message = mensagem_erro[message_start:message_end].strip()
+            return f"Erro de Validação: {message} no nó {node}."
+        elif "ExecutionError" in mensagem_erro:
+            return "Erro de Execução: Ocorreu um problema ao executar a consulta."
+        else:
+            if "invalid attribute reference" in mensagem_erro:
+                attribute_start = mensagem_erro.find("in") + 3
+                attribute_end = mensagem_erro.find(":", attribute_start)
+                attribute_name = mensagem_erro[attribute_start:attribute_end].strip()
+                return f"Erro: Referência de atributo inexistente: '{attribute_name}'."
+            elif "extraneous input" in mensagem_erro:
+              return "Erro: Condição incompleta ou incorreta na consulta."
+            elif "mismatched input" in mensagem_erro:
+                input_start = mensagem_erro.find("input '") + 7
+                input_end = mensagem_erro.find("'", input_start)
+                invalid_char = mensagem_erro[input_start:input_end].strip()
+                return f"Erro: Caractere '{invalid_char}' inválido para o operador específico"
+            return f" Erro: {mensagem_erro}"
 
     def executa_consulta_ra(self, query):
         output = StringIO()
         sys.stdout = output
         error_message = None
-
         try:
             ast = one_statement_from_string(query)
             logger.info('statement parsed:')
@@ -100,14 +130,19 @@ class RA:
             logger.info('statement validated:')
             ast.execute(self.context)
         except (ParsingError, ValidationError, ExecutionError) as e:
-            error_message = f'Error executing query: {str(e)}'
-            print(error_message)
+            return self.translate_to_portuguese(str(e))
         finally:
             sys.stdout = sys.__stdout__
-        
         result = output.getvalue()
         if error_message:
             result += f"\n{error_message}"
         
         return result
 
+    def close_db(self):
+        """Método para fechar a conexão com o banco de dados"""
+        if self.db and self.db.conn:
+            self.db.conn.close()
+            self.db.engine.dispose()
+            self.db = None
+            

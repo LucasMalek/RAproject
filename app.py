@@ -1,4 +1,4 @@
-from flask import Flask, request, render_template, session, jsonify, make_response
+from flask import Flask, request, render_template, session, jsonify, make_response ,redirect, url_for
 from flask_session import Session
 import queue
 import threading
@@ -12,8 +12,8 @@ from datetime import timedelta
 import glob
 import sqlite3
 from io import BytesIO
-from werkzeug.datastructures import FileStorage
-import requests 
+import time
+import logging
 
 
 def limpar_arquivos_session():
@@ -117,16 +117,28 @@ def reform_consult(string):
     return reformed_result
 
 
+import logging
+
+import logging
+import time
+import queue
 def process_db_tasks():
     while True:
-        task_data = requisition_queue.get()
-        func, user, task = task_data
-        if task == 1:
-            instances[user] = func
-        elif task == 2:
-            result = instances[user].executa_consulta_ra(func)
-            result_queue.put(result)
-
+        try:
+            task_data = requisition_queue.get(timeout=2) 
+            func, user, task = task_data
+            if task == 1:
+                instances[user] = func 
+            elif task == 2:
+                result = instances[user].executa_consulta_ra(func)
+                result_queue.put(result)
+            else:
+                instances[user].close_db()
+        except queue.Empty:
+            pass
+        except Exception as e:
+            pass
+        time.sleep(0.2)  
 
 db_thread = threading.Thread(target=process_db_tasks)
 db_thread.daemon = True
@@ -151,7 +163,6 @@ def returnqueryUnary(operator, atributes, relation_structured, operator_code):
         query.append(f'\\{operator}{{{atributes}}}({relation_structured[0]})')
         query.append(format_unary_html(operator_code, atributes, relation_structured[1]))
     return query
-
 
 def returnqueryBinary(operator, atributes, relation_structured, operator_code):
     query = []
@@ -234,7 +245,6 @@ def validateattributes(attributes, type):
 
 def CreateConsultfromOperators(operators, assigments = None):
     query_sufix = ''
-    print(operators)
     unary = {
         '\u03C3': 'select_',
         '\u03C0': 'project_',
@@ -258,7 +268,6 @@ def CreateConsultfromOperators(operators, assigments = None):
         operator = operators[0]
         operator_caractere = operator['operator']
         atributes_values = operator['atributes_values']
-        validateattributes(atributes_values)
         if operator_caractere in unary:
             relation_value = operator['relation'][0]
             operator_value = unary.get(operator_caractere)
@@ -324,7 +333,7 @@ async def consult():
                         return make_response(jsonify({'error': f"Linha {index + 1}: {intermediate_response[1]}"}), 400)
                 else:
                   intermediate_response = CreateConsultfromOperators(consult, assigments)
-                  if(intermediate_response[0] != 'error'):
+                  if(intermediate_response[0] != 'error'):  
                    consult_complete.append(intermediate_response)
                   else:
                     return make_response(jsonify({'error': f"Linha {index + 1}: {intermediate_response[1]}"}), 400)  
@@ -335,10 +344,17 @@ async def consult():
                 
             consult_complete.extend([valor for valor in assigments.values()])
             
-            for consult in consult_complete:
+            for index, consult in enumerate(consult_complete):
                 query = f"{consult[0]};"
                 requisition_queue.put([query, session['session_init'], 2])
                 result = result_queue.get()
+                if 'no tuples returned' in result:
+                    all_results.append(['Nenhuma tupla retornada. Verifique a consulta novamente.', consult[1]])
+                    continue
+                error_pattern = re.compile(r'Erro[^:]*:')
+                match = re.search(error_pattern, result)
+                if match:
+                    return make_response(jsonify({'error': f"Linha {index + 1}: {result}"}), 500)
                 all_results.append([reform_consult(result), consult[1]])
             
             return jsonify(all_results)
@@ -351,37 +367,53 @@ async def consult():
 
 
 @app.route('/loadfile', methods=['GET', 'POST'])
-def loadfile():
+def loadfile(file=None):
+    global count, instances
     if 'session_init' not in session:
-        global count
         session['session_init'] = count
+        session['page_visited'] = True 
         relations_details_structure = []
-        file = request.files['file']
+        
+        if file is None:
+            if 'file' not in request.files:
+                return jsonify({'erro': 'Nenhum arquivo foi enviado!'}), 400
+            file = request.files['file']
+        
         bd_name = f"{str(session['session_init'])}.db"
         file.save(os.path.join(os.getcwd(), bd_name))
-        requisition_queue.put(
-            [ralib.RA(bd_name), session['session_init'], 1])
-        requisition_queue.put(
-            [f"radb {bd_name}", session['session_init'], 2])
-        result_queue.get()
+        
+        requisition_queue.put([ralib.RA(bd_name), session['session_init'], 1])
+
+        requisition_queue.put([f"radb {bd_name}", session['session_init'], 2])
+        
+        result = result_queue.get()
+        
         count += 1
+        
         try:
             requisition_queue.put(['\list;', session['session_init'], 2])
             result = result_queue.get()
+            
             relations_labels, tuples = reform_list(result, 'list')
+            
             for item in relations_labels:
                 match = re.match(r'(\w+)\((.*?)\)', item)
                 if match:
                     nome_relacao = match.group(1).strip()
                     atributos_str = match.group(2)
-                    atributos = [atributo.strip()
-                                 for atributo in atributos_str.split(',')]
-                    relations_details_structure.append(
-                        [nome_relacao] + atributos)
+                    atributos = [atributo.strip() for atributo in atributos_str.split(',')]
+                    relations_details_structure.append([nome_relacao] + atributos)
+            
             return jsonify([tuples, relations_details_structure])
         except Exception as e:
-            return jsonify({'erro': e})
-
+            return jsonify({'erro': str(e)}), 500
+    
+    else:
+        if 'file' not in request.files:
+            return jsonify({'erro': 'Nenhum arquivo foi enviado!'}), 400
+        file = request.files['file']
+        check_refresh()
+        return loadfile(file=file)
 
 @app.route('/prototipo', methods=['GET'])
 def prototipo():
@@ -457,14 +489,17 @@ def insert():
 
 
 @app.route('/createdbfile', methods=['POST'])
-def createdbfile():
+def createdbfile(db = None):
+    global count
     if 'session_init' not in session:
-        global count
+        print('entrou')
         session['session_init'] = count
+        session['page_visited'] = True 
         relations_details_structure = []
         conn = sqlite3.connect(f"{str(session['session_init'])}.db")
         cursor = conn.cursor()
-        db = request.get_json()
+        if db == None:
+            db = request.get_json()
         for table, info in db.items():
             tablename = info["tablename"]
             attr_types = ", ".join([f"{attribute} {typ}" for attribute, typ in zip(
@@ -499,7 +534,10 @@ def createdbfile():
             return jsonify([tuples, relations_details_structure])
         except Exception as e:
             return jsonify({'erro': e})
-  
+    else:
+        db = request.get_json()
+        check_refresh()
+        return createdbfile(db = db)
 
 @app.route('/deletetable', methods = ['POST'])
 def deletetable():
@@ -583,8 +621,31 @@ def deletetuple():
 
      else:
             return jsonify({'error': 'Session not initialized'}), 400
-        
-     
+  
+  
+def delete_user_archive(archive_name):
+    archive = f"{str(archive_name)}.db"
+    if os.path.exists(archive):
+        try:
+            os.remove(archive)
+        except OSError as e:
+            print(f"Erro ao tentar apagar o arquivo '{archive_name}': {e}")
+    else:
+        return
+    return    
+
+
+def check_refresh():
+    global instances
+    if 'page_visited' in session:
+        user_number = session['session_init']
+        requisition_queue.put([None, user_number, 3])
+        requisition_queue.put(['\quit;', user_number, 2])
+        time.sleep(0.2)
+        instances.pop(user_number, None) 
+        delete_user_archive(user_number)
+        session.clear() 
+
 atexit.register(limpar_arquivos_session)
 atexit.register(clean_db_files)
 
