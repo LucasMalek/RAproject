@@ -72,7 +72,15 @@
           </div>
       </div>
       <div id="bd">
-        <div class="relation_label">Relações</div>
+        <div class="relation_label">
+          Relações
+          <div>
+            <label class="change_db" title="Trocar banco de dados">
+              <i class="fas fa-sync-alt"></i>
+              <input type="file" id="change_db_input" accept=".db">
+          </label>
+          </div>
+        </div>
       </div>
       <div class="consult_environment">
         <div class="keyboard">
@@ -91,25 +99,24 @@
       <form method="post" id="consult_form">
           <div class="consult_interface"></div>
           <div class="consultform_buttons_container">
-            <button onclick="deletealloperators()"  type="button">
-              <i class="fas fa-play" style="margin-right: 0.8rem; color: white;"></i>Apagar
+            <button onclick="deletealloperators()"  type="button" class="create-db-button">
+              <i class="fas fa-trash icon-trash" style="margin-right: 0.8rem; color: red;"></i>Apagar todos os operadores
             </button>
             <button type="submit">
-              <i class="fas fa-play" style="margin-right: 0.8rem; color: white;"></i>Consultar
+              <i class="fas fa-chevron-right icon-arrow" style="margin-right: 0.8rem; color: white;"></i>Consultar
             </button>
-            <button type = "button" onclick="pegar()">Pegar</button>
           </div>
       </form>
       </div>
       <div class="resultcontainer">
         <div id="historic">
           <div class="titlecontainer">
-            <h2>Histórico</h2>
+            Histórico
           </div>
         </div>
         <div id="result">
           <div class="titlecontainer">
-            <h2>Resultado</h2>
+            Resultado
           </div>
         </div>
       </div>
@@ -127,7 +134,7 @@
             }
         }
     });
-    
+
     form.addEventListener('submit', function(event) {
         event.preventDefault();
         const fileInput = document.getElementById('fileInput');
@@ -165,7 +172,6 @@
         });
     });
     
-
 function initializesystem(db) {
       const replacementContainer = document.createElement('div');
       replacementContainer.setAttribute('class', 'consultcontainer');
@@ -207,8 +213,72 @@ function initializesystem(db) {
             containerfade.className = 'containerfade_maininterface';
             document.querySelector('.maincontainer').appendChild(containerfade);
             });
+            change_db_listener();
     }
-    
+
+function change_db_listener() {
+      const inputElement = document.getElementById('change_db_input');
+      
+      inputElement.removeEventListener('change', handleChangeDB);
+      
+      inputElement.addEventListener('change', handleChangeDB);
+  }
+  
+function handleChangeDB(event) {
+    const file = event.target.files[0];
+    if (file) {
+        const fileName = file.name.toLowerCase();
+        if (fileName.endsWith('.db')) {
+            const db_container = document.querySelector('#bd');
+            const loadercircle = document.createElement('div');
+            loadercircle.className = 'create_db_loadercircle';
+            loadercircle.style.width = '2rem';
+            loadercircle.style.height = '2rem';
+            loadercircle.style.position = 'absolute';
+            loadercircle.style.top = '17rem';
+            loadercircle.style.left = '15rem';
+            
+            let formData = new FormData();
+            formData.append('file', file);
+            db_container.querySelectorAll('.table_container').forEach(old_table => {
+              old_table.remove();
+            });
+            db_container.appendChild(loadercircle);
+            fetch('/loadfile', {
+                method: 'POST',
+                body: formData
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error('Erro na requisição');
+                } else {
+                    return response.json();
+                }
+            }).then(db => {
+                
+                printdbtables(db, 'alltables');
+                
+                db_container.querySelectorAll('.table_container').forEach(newtables => {
+                    newtables.style.opacity = 0;
+                });
+
+                setTimeout(() => {
+                    db_container.querySelectorAll('.table_container').forEach(newtables => {
+                        newtables.style.opacity = 1;
+                    });
+                }, 100);
+                loadercircle.remove(); 
+                event.target.value = ''; 
+            }).catch(error => {
+                console.error('Erro ao carregar o arquivo:', error);
+                event.target.value = ''; 
+            });
+        } else {
+            alert('Por favor, selecione um arquivo com a extensão .db');
+            event.target.value = ''; 
+        }
+    }
+}
+
     let last_tab = "consult";
     let last_tab_create_table = 1;
     let operators = [];
@@ -421,6 +491,12 @@ function deletecreatetable(createtable) {
       containerfade.remove();
    }
    createtable.style.display = 'none';
+   createtable.querySelectorAll('.add-button').forEach(element => {
+    element.style.display = 'flex';
+   })
+   createtable.querySelectorAll('.remove-button').forEach(element => {
+    element.style.display = 'flex';
+   })
 }
 
 function deletealloperators() {
@@ -615,6 +691,7 @@ function createtabletablistener() {
     }
 });
 } 
+
 function tablistener() {
       Array.from(document.querySelector('.tab_container').children).forEach(element => {
       
@@ -659,7 +736,6 @@ function tablistener() {
     }
 
 function removeOperatorByIndex(line, position, father) {
-                        
               if (father != null) {
                 fatherposition = father.getAttribute('position');
                 for (let [index, element] of operators[line][fatherposition].relation.entries()) {
@@ -669,90 +745,144 @@ function removeOperatorByIndex(line, position, father) {
                     }
                 }
             }
-
+            
             for (let son of operators[line][position].relation) {
               if (son && typeof son === 'number') {
                   for (let [index, element] of operators[line].entries()) {
-                      if (element.operatorindex == son) {
+                      if (element != null && element.operatorindex == son) {
                           removeOperatorByIndex(line, index, null);
                       }
                   }
               }
           }
-              operators[line].splice(position, 1);
-              if(operators[line].length == 0){
-                
-                operators.splice(line, 1);
-                
-              }
-        }
 
-document.addEventListener('keydown', function(event) {
-        const selectedOperatorcontainer = document.querySelector('.operator-container.selected');
-        if (event.key === 'Backspace' && selectedOperatorcontainer) {
-            let selectedOperatorfather = selectedOperatorcontainer.parentNode;
-            while(!selectedOperatorfather.classList.contains('operator-container')) {
-              if(selectedOperatorfather.classList.contains('consult_interface')) {
-                selectedOperatorfather = null
-                break
-              }
-              else{
-                selectedOperatorfather = selectedOperatorfather.parentNode;
-              }
+          
+          operators[line].splice(position, 1);
+          if(operators[line].length == 0){
+              operators.splice(line, 1);
+              operatorsDOM = document.querySelectorAll('.operator-container');
+                operatorsDOM.forEach(element => {
+                    elementline = parseInt(element.getAttribute('line'));
+                    if(elementline > parseInt(line)) {
+                      element.setAttribute('line', elementline - 1);
+                    }
+                })
+          }else {
+
+            try{
+              if(operators[line][position - 1] == null || operators[line][position - 1]){
+                if(typeof operators[line][position - 1] != 'object' || operators[line][position - 1] == null){
+                  operators.splice(line, 1);
+                  operatorsDOM = document.querySelectorAll('.operator-container');
+                  operatorsDOM.forEach(element => {
+                      elementline = parseInt(element.getAttribute('line'));
+                      if(elementline > parseInt(line)) {
+                        element.setAttribute('line', elementline - 1);
+                      }
+                  })
+                }
             }
-            if(selectedOperatorfather != null) {
-                 let relationArea;
-                 let soncomplexrelation = null;
-                 selectedOperatorfather.querySelectorAll(':scope > .relationArea').forEach(element => {
-                  soncomplexrelation = element.querySelector('.complex_relation');
-                  if(soncomplexrelation && soncomplexrelation.contains(selectedOperatorcontainer)) {
-                       relationArea = element;
-                  }else {
-                    soncomplexrelation = null;
-                  }
-              });
-              if (soncomplexrelation) {
-                let relation = document.createElement('input');
-                relation.classList.add('simple_relation');
-                relation.setAttribute('placeholder', 'R');
-                relation.setAttribute('index', parseInt(soncomplexrelation.getAttribute('index')));
-                relationArea.replaceChild(relation, soncomplexrelation);
-              }
-            }else {
-              selectedOperatorcontainer.remove();
+            }catch {
+              
             }
-            removeOperatorByIndex(selectedOperatorcontainer.getAttribute('line'), selectedOperatorcontainer.getAttribute('position'), selectedOperatorfather);
+
+          }
+
+          operatorspropertieslisteners();
         }
-        operatorspropertieslisteners();
-    });
+    
+document.addEventListener('keydown', function(event) {
+          const selectedOperatorSymbol = document.querySelector('.operator-symbol.selected');
+          if (event.key === 'Backspace' && selectedOperatorSymbol) {
+              const selectedOperatorcontainer = selectedOperatorSymbol.closest('.operator-container');
+              let selectedOperatorfather = selectedOperatorcontainer.parentNode;
+              while(!selectedOperatorfather.classList.contains('operator-container')) {
+                  if(selectedOperatorfather.classList.contains('consult_interface')) {
+                      selectedOperatorfather = null;
+                      break;
+                  } else {
+                      selectedOperatorfather = selectedOperatorfather.parentNode;
+                  }
+              }
+              if(selectedOperatorfather != null) {
+                  let relationArea;
+                  let soncomplexrelation = null;
+                  selectedOperatorfather.querySelectorAll(':scope > .relationArea').forEach(element => {
+                      soncomplexrelation = element.querySelector('.complex_relation');
+                      if(soncomplexrelation && soncomplexrelation.contains(selectedOperatorcontainer)) {
+                          relationArea = element;
+                      } else {
+                          soncomplexrelation = null;
+                      }
+                  });
+                  if (soncomplexrelation) {
+                      let relation = document.createElement('input');
+                      relation.classList.add('simple_relation');
+                      relation.setAttribute('placeholder', 'R');
+                      relation.setAttribute('index', parseInt(soncomplexrelation.getAttribute('index')));
+                      relationArea.replaceChild(relation, soncomplexrelation);
+                  }
+              } else {
+                  selectedOperatorcontainer.remove();
+              }
+              removeOperatorByIndex(selectedOperatorcontainer.getAttribute('line'), selectedOperatorcontainer.getAttribute('position'), selectedOperatorfather);
+          }
+      });
+
+document.addEventListener('mouseover', function(event) {
+  if (event.target.classList.contains('operator-symbol')) {
+      const operatorContainer = event.target.closest('.operator-container');
+      
+      
+      if (!event.target.classList.contains('selected')) {
+          operatorContainer.style.transition = 'border-color 0.3s ease';
+          operatorContainer.style.border = '1px solid rgba(87, 48, 129, 0.5)'; 
+      }
+  }
+});
+
+document.addEventListener('mouseout', function(event) {
+  if (event.target.classList.contains('operator-symbol')) {
+      const operatorContainer = event.target.closest('.operator-container');
+      
+    
+      if (!event.target.classList.contains('selected')) {
+          operatorContainer.style.border = '1px solid transparent'; 
+      }
+  }
+});
 
 document.addEventListener('click', function(event) {
-            const clickedElement = event.target;
-            let Operatorcontainer;
-            if(clickedElement.classList.contains('operator-container')) {
-              Operatorcontainer = clickedElement
-            }
-            if (Operatorcontainer) {
-                document.querySelectorAll('.operator-container').forEach(element => {
-                    element.style.border = 'none'
-                    element.classList.remove('selected');
-                });
-                Operatorcontainer.style.setProperty('border', '2px solid purple', 'important');
-                Array.from(Operatorcontainer.children).forEach(child => {
-                  if(child.classList.contains('complex_relation')) {
-                    child.style.borderBottom = '2px solid purple'
-                    child.style.borderTop ='2px solid purple'
-                    child.style.borderRight = '2px solid purple'
-                  }
-                })
-                Operatorcontainer.classList.add('selected');
-            }else {
-              document.querySelectorAll('.operator-container').forEach(element => {
-                element.style.border = 'none'
-                element.classList.remove('selected');
-              });
-            }
-        });
+  const clickedElement = event.target;
+  let operatorSymbol;
+
+  
+  if (clickedElement.classList.contains('operator-symbol')) {
+      operatorSymbol = clickedElement;
+  }
+
+  if (operatorSymbol) {
+      const operatorContainer = operatorSymbol.closest('.operator-container');
+
+   
+      document.querySelectorAll('.operator-symbol').forEach(symbol => {
+          const container = symbol.closest('.operator-container');
+          container.style.border = '1px solid transparent'; 
+          symbol.classList.remove('selected'); 
+      });
+
+      
+      operatorContainer.style.border = '1px solid rgba(87, 48, 129, 0.5)'; 
+      operatorSymbol.classList.add('selected'); 
+  } else {
+   
+      document.querySelectorAll('.operator-symbol').forEach(symbol => {
+          const container = symbol.closest('.operator-container');
+          container.style.border = '1px solid transparent'; 
+          symbol.classList.remove('selected'); 
+      });
+  }
+});
 
 function createOperatorContainer(operator, line, position) {
 
@@ -789,10 +919,13 @@ function createOperatorContainer(operator, line, position) {
   const attributeValueContainer = document.createElement('div');
   let secondrelationArea = null;
 
-  if (!['⋈θ'].includes(operator)) {
       if(operators.length == 0 || operator == "\u2190") {
         operatorContainer.style.marginTop = '1%';
         operatorContainer.style.marginLeft = '1%';
+        if(operator == "\u2190") {
+          operatorElement.style.marginLeft = '0.2rem';
+          operatorElement.style.marginRight = '0.2rem';
+        }
       }
       if (['\u03C3', '\u03C0', '\u03C1'].includes(operator)) {
           const input_atributes = document.createElement('input');
@@ -807,14 +940,21 @@ function createOperatorContainer(operator, line, position) {
             variable.classList.add('variable');
             variable.setAttribute('placeholder', 'Nome da variável');
           }
+          if(operator == "⋈θ") {
+            operatorElement.textContent = "⋈"
+            operatorElement.style.marginLeft = '0.1rem';
+            operatorElement.style.marginRight = '0.1rem';
+            const input_atributes = document.createElement('input');
+            input_atributes.setAttribute('placeholder', 'Atr1: valor, ...');
+            input_atributes.setAttribute('class', 'input-atributes');
+            attributeValueContainer.setAttribute('class', 'attribute-value-container');
+            attributeValueContainer.appendChild(input_atributes);
+          }
           relation.setAttribute('index', 1);
           secondrelationArea.querySelector('.simple_relation').setAttribute('index', 0);
           operatorContainer.appendChild(secondrelationArea);
       }
-  } else {
-      
-  }
-
+  
   operatorContainer.appendChild(operatorElement);
   operatorContainer.appendChild(attributeValueContainer);
   operatorContainer.appendChild(relationArea);
@@ -876,7 +1016,6 @@ function addOperator(operator) {
   }
 
   let container;
-
   if (operators.length > 0 && operator != "\u2190") {
       if (selectedRelation) {
           if(selectedRelation.classList.contains('variable')) {
@@ -890,7 +1029,7 @@ function addOperator(operator) {
           const complex_input = document.createElement('div');
           complex_input.classList.add('complex_relation');
           selectedRelation.parentNode.replaceChild(complex_input, selectedRelation);
-          position = selectedOperator.getAttribute('position');
+          position = parseInt(selectedOperator.getAttribute('position'));
           let newoperatorposition = parseInt(position) + 1;
           index = selectedRelation.getAttribute('index');
           complex_input.setAttribute('index', index);
@@ -911,20 +1050,108 @@ function addOperator(operator) {
         operators.push([newOperator]);
       }
   }
-
+   
     operatorspropertieslisteners();
- 
 }
+
+function addOperatorInfo() {
+  const operatorInfo = {
+      "←": "Este operador é usado para atribuição. Este operador serve para atribuir uma consulta a um nome," +
+           "que pode ser referenciado como uma relação em consultas futuras.\n\nFormato da operação: Variável ← Operação. \n\nExemplo de uso: " +
+           "A ← σ {idade = 30} (Pessoa), π {nome} (A).",
+
+      "σ": "Este operador representa a seleção, que retorna tuplas que satisfazem os valores informados para os atributos na condição da operação.\n\n" +
+           "Formato da operação: σ {condição} (Relação)\n\nExemplo de uso: σ {nome = 'Amy'} (Aluno).\n\n" +
+           "Formato de condições aceitas:\n1. Atributo = valor\n2. Atributo1 = Valor1 or Atributo2 = Valor2\n" +
+           "3. Atributo like 'A%' (correspondência de string)",
+
+      "Π": "Este operador representa a projeção, que retorna apenas os atributos especificados na condição da operação.\n\n" +
+           "Formato da operação: π {Atributos} (Relação)\n\nExemplo de uso: π {preço} (Produto).\n\n" +
+           "Formato de condições aceitas: Atributo1, Atributo2...",
+
+      "ρ": "Este é o operador renomear. Este operador permite atribuir novos nomes à relação e/ou seus atributos nas consultas.\n\n" +
+           "Formato da operação: ρ {condição} (Relação)\n\n" +
+           "Exemplo de uso: ρ {estatura, massa} (Pessoa)\n\n" +
+           "Formato de condições aceitas:\n 1. ρ {novo_nome_relação: *} (Relação)\n" +
+           "2. ρ {novo_nome_relação: novo_nome_atributo1, novo_nome_atributo2...} (Relação)",
+
+      "⋃": "Este é o operador 'União'. R ∪ M retorna uma instância de relação contendo todas as tuplas que ocorrem na instância de relação R ou na instância de relação M (ou em ambas). R e M devem ser compatíveis à união (número de campos e domínio dos atributos são os mesmos para as duas relações), e o esquema do resultado é definido de forma idêntica ao esquema de R."
+         + "\n\n Formato da operação: Relação1 ∪ Relação2\n\nExemplo de uso: Pessoa ∪ Cliente.",
+           
+      "-": "Este é o operador 'Diferença'. R – M retorna uma instância de relação contendo todas as tuplas que ocorrem em R, mas não em M. As relações R e M devem ser compatíveis à união, e o esquema do resultado é definido de forma idêntica ao esquema de R." +
+           "\n\nFormato da operação: Relação1 − Relação2\n\nExemplo de uso: Pessoa − Cliente.",
+
+      "∩": "Este é o operador 'Intersecção'. R ∩ M retorna uma instância de relação contendo todas as tuplas que ocorrem em ambas R e M. As relações R e M devem ser compatíveis à união, e o esquema do resultado é definido de forma idêntica ao esquema de R.\n\n" +
+           "Formato da operação: Relação1 ∩ Relação2\n\nExemplo de uso: Pessoa ∩ Cliente.",
+
+      "×": "Este é o operador 'Produto cartesiano'. R × M retorna uma instância de relação cujo esquema contém todos os campos de R (na mesma ordem em que eles aparecem em R) seguidos de todos os campos de M (na mesma ordem em que eles aparecem em M). O resultado de R X M contém uma tupla <r, s> (a concatenação das tuplas r e s) para cada par de tuplas r ∈ R, s ∈ M."
+       + "\n\n Formato da operação: Relação1 × Relação2\n\nExemplo de uso: Pessoa × Cliente.",
+           
+      "⋈": "Este é o operador 'Equijunção'. R ⋈	M é quando a condição de junção consiste apenas em igualdades (ligadas por ∧) no formato R.nome1 = M.nome2, ou seja, igualdades entre os dois campos em R e M.\n\n" +
+            "Formato da operação: Relação1 ⋈ Relação2N\nExemplo de uso: Pessoa ⋈ Cliente.",
+
+      "⋈θ": "Este é o operador 'Junção natural'. R ⋈θ	M é uma eqüijunção na qual as igualdades são especificadas para todos os campos que têm os mesmos nomes em R e M. .\n\n" +
+            "Formato da operação: Relação1 ⋈θ Condição (Relação2)\n\nExemplo de uso: Pessoa ⋈θ {Pessoa.nome = Cliente.nome} Cliente.\n\n" +
+            "Formato de condições aceitas: {Relação1.atributo1 = Relação2.atributo2}",
+
+      "÷": "Considere duas instâncias de rela- ção A e B, na qual A tem (exatamente) dois campos x e y, e B tem apenas um campo y, com o mesmo domínio que A. Definimos a operação divisão A/B como o conjunto de todos os valores x (no formato de tuplas unárias) tais que, para todo valor y em (uma tupla de) B, há uma tupla <x,y> em A."+
+       "\n\n Formato da operação: Relação1 ÷ Relação2\n\nExemplo de uso: Pessoa ÷ Cliente."
+  };
+
+  const operatorButtons = document.querySelectorAll('.keyboard button');
+
+  operatorButtons.forEach(button => {
+      const operator = button.textContent.trim();
+
+      const operatorDescription = operatorInfo[operator] || 'Informação não disponível';
+
+      const existingTooltip = document.querySelector('.tooltip');
+      if (existingTooltip) {
+          existingTooltip.remove();
+      }
+
+      button.addEventListener('mouseenter', () => {
+          const tooltip = document.createElement('div');
+          tooltip.className = 'tooltip';
+
+          // Converte quebras de linha \n para <br>
+          tooltip.innerHTML = operatorDescription.replace(/\n/g, '<br>');
+
+          document.body.appendChild(tooltip);
+
+          const buttonRect = button.getBoundingClientRect();
+          tooltip.style.left = `${buttonRect.left}px`;
+          tooltip.style.top = `${buttonRect.bottom + window.scrollY + 10}px`; // 10px abaixo do botão
+
+          // Exibe a tooltip
+          tooltip.style.visibility = 'visible';
+          tooltip.style.opacity = '1';
+      });
+
+      button.addEventListener('mouseleave', () => {
+          const tooltip = document.querySelector('.tooltip');
+          if (tooltip) {
+              tooltip.remove(); // Remove a tooltip ao sair do hover
+          }
+      });
+  });
+}
+
+document.addEventListener('DOMContentLoaded', addOperatorInfo);
 
 function operatorspropertieslisteners() {
   document.querySelectorAll('.operator-container').forEach((operatorContainer) => {
+    console.log(operatorContainer);
     let line = parseInt(operatorContainer.getAttribute('line'));
+    console.log(line);
     let position = parseInt(operatorContainer.getAttribute('position'));
     let attributevaluecontainer = operatorContainer.querySelector(':scope > .attribute-value-container');
     let inputAttributes;
+
     if (attributevaluecontainer) {
       inputAttributes = attributevaluecontainer.querySelector(':scope > .input-atributes');
     }
+
     let relationAreas = operatorContainer.querySelectorAll(':scope > .relationArea');
 
     if (inputAttributes && !inputAttributes.getAttribute('listener-added')) {
@@ -940,11 +1167,28 @@ function operatorspropertieslisteners() {
         simpleRelations.forEach(element => {
           if (!element.getAttribute('listener-added')) {
             element.addEventListener('input', function () {
-              simplerelationindex = element.getAttribute('index');
-              if (element.classList.contains('variable')) {
-                operators[line][0] = element.value;
+              let simplerelationindex = element.getAttribute('index');
+
+
+              let parentElement = element.parentElement;
+              while (parentElement && !parentElement.classList.contains('operator-container')) {
+                parentElement = parentElement.parentElement;
               }
-              operators[line][position].relation[simplerelationindex] = element.value;
+
+              if (parentElement) {
+                let parentLine = parseInt(parentElement.getAttribute('line'));
+                console.log(`Encontrado operator-container pai com line: ${parentLine}`);
+
+                if (element.classList.contains('variable')) {
+                  if (operators[parentLine][0] == null) {
+                    operators[parentLine][0] = '';
+                  }
+                  operators[parentLine][0] = element.value;
+                }
+                operators[parentLine][position].relation[simplerelationindex] = element.value;
+              } else {
+                console.error('Não foi possível encontrar o operator-container pai');
+              }
             });
             element.setAttribute('listener-added', 'true');
           }
@@ -985,12 +1229,15 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
       line_button_container.className = 'line_button_container';
       let lastline;
       let all_lines_text = [];
+      
 
       for (let [index, line] of data.entries()) {
           let line_button = document.createElement('BUTTON');
           line_button.className = 'line_button';
           line_button.textContent = `${index}`;
+          line_button.title = `Linha ${index} da consulta`;
           line_button_container.appendChild(line_button);
+          let buttonoriginalcolor = line_button.style.color;
           let [line_result, line_text] = resultlines(line, result, historicarea, userconsult, titlearea);
           if (index == data.length - 1) {
               lastline = line_result;
@@ -1002,6 +1249,12 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
                       child.remove();
                   }
               });
+              document.querySelectorAll('.line_button').forEach(element => {
+                element.style.backgroundColor = 'rgba(220, 220, 220, 1)';
+                element.style.color = buttonoriginalcolor;
+              })
+              this.style.backgroundColor = 'rgb(105, 105, 105)';
+              this.style.color = 'white';
               result.appendChild(line_result);
           };
       }
@@ -1101,7 +1354,7 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
               child.remove();
           }
       });
-
+ 
       historicarea.appendChild(text_query_historic_container);
 
       historic_consults.forEach(element => {
@@ -1129,7 +1382,14 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
 
         text_query_historic_container.appendChild(historic_buttons_container);
       });
-
+      
+      finalbutton = line_button_container.lastElementChild;
+      finalbutton.classList.add('pulse');
+      setTimeout(() => {
+        finalbutton.classList.remove('pulse');
+        finalbutton.click();
+      }, 1500);
+      
   }).catch(error => {
       alert(error.message)
   });
@@ -1319,6 +1579,9 @@ function printdbtables(data, requisition) {
                               addAttribute(container, attribute, type);
                           }
                       });
+                      attributeinput = container.querySelector('.attribute-input')
+                      attributeinput.querySelector('.add-button').style.display = 'none';
+                      attributeinput.querySelector('.remove-button').style.display = 'none';
                   }).catch(error => {
                       console.error('Erro ao obter os atributos:', error);
                   });
@@ -1414,7 +1677,15 @@ function printdbtables(data, requisition) {
                      tuples.slice(1).forEach(tuple => {
                          addtuple(container, tuple)
                      })
+
+                     container.querySelectorAll('.add-button').forEach(element => {
+                      element.style.display = 'none';
+                     })
+                     container.querySelectorAll('.remove-button').forEach(element => {
+                      element.style.display = 'none';
+                     })
                 })
+
               }
 
               let delete_tuple_button = document.createElement('BUTTON');
@@ -1492,7 +1763,7 @@ function printdbtables(data, requisition) {
                   document.body.appendChild(popup);
                   let size = 0;
                   size = table_container_complete.querySelector('.show_at_delete_tuple').clientWidth;
-                  console.log(size);
+               
                   contenttopush = table_container_complete.querySelector('.table_name');
                   contenttopush.style.marginLeft = size + 'px';
                   

@@ -110,13 +110,18 @@ class RA:
                 attribute_name = mensagem_erro[attribute_start:attribute_end].strip()
                 return f"Erro: Referência de atributo inexistente: '{attribute_name}'."
             elif "extraneous input" in mensagem_erro:
-              return "Erro: Condição incompleta ou incorreta na consulta."
+                return "Erro: Condição incompleta ou incorreta na consulta."
             elif "mismatched input" in mensagem_erro:
                 input_start = mensagem_erro.find("input '") + 7
                 input_end = mensagem_erro.find("'", input_start)
                 invalid_char = mensagem_erro[input_start:input_end].strip()
-                return f"Erro: Caractere '{invalid_char}' inválido para o operador específico"
-            return f" Erro: {mensagem_erro}"
+                return f"Erro: Caractere '{invalid_char}' inválido para o operador específico."
+            elif "ambiguous attribute reference" in mensagem_erro:
+                attribute_start = mensagem_erro.find("context:") + 9
+                attribute_end = mensagem_erro.find(" ", attribute_start)
+                attribute_name = mensagem_erro[attribute_start:attribute_end].strip()
+                return f"Erro: Referência de atributo ambígua: '{attribute_name}'. No caso de dúvida com o preenchemento da condição, deixe o mouse sobre o botão do operador"
+            return f"Erro: {mensagem_erro}"
 
     def executa_consulta_ra(self, query):
         output = StringIO()

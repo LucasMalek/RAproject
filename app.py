@@ -13,7 +13,7 @@ import glob
 import sqlite3
 from io import BytesIO
 import time
-import logging
+import queue
 
 
 def limpar_arquivos_session():
@@ -117,11 +117,6 @@ def reform_consult(string):
     return reformed_result
 
 
-import logging
-
-import logging
-import time
-import queue
 def process_db_tasks():
     while True:
         try:
@@ -255,7 +250,9 @@ def CreateConsultfromOperators(operators, assigments = None):
         '\u2212': 'diff',
         '\u2229': 'intersect',
         '\u2715': 'cross',
-        '\u2190': 'assigment'
+        '\u2190': 'assigment',
+        '⋈': 'join',
+        '⋈θ': 'join_'
     }
 
     def operatorsthread(operators_clone, index):

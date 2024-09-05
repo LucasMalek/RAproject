@@ -197,7 +197,7 @@ h2 {
   align-items: center;
   justify-content: center;
   width: 90%;
-  height: 82%;
+  height: 47.5rem;
   margin-top: 4em;
   position: relative;
 }
@@ -218,20 +218,35 @@ h2 {
 }
 
 .keyboard {
-  height: 10%;
+  height: 4rem;
   width: 100%;
-  align-items: flex-end;
-  flex-direction: row;
+  display: flex;
+  justify-content: flex-start; 
+  align-items: center; 
+  background-color: transparent; 
+  margin-bottom: 0.1rem;
+ 
 }
 
 .keyboard button {
-  height: 65%;
-  width: 5%;
-  background-color: white;
+  height: 80%; 
+  width: 5%; 
+  background-color: transparent; 
   font-size: large;
   cursor: pointer;
-  border-bottom: none;
-  border-color: grey;
+  border: none; 
+  color: #2d025b;
+  border-right: 0.1rem solid grey; 
+  font-weight: 500;
+  position: relative;
+}
+
+.keyboard button:last-child {
+  border-right: none;
+}
+
+.keyboard button:hover {
+  background-color: rgba(203, 202, 206, 0.5); 
 }
 
 .consult_environment {
@@ -251,13 +266,6 @@ h2 {
   width: 100%;
 }
 
-#consult_form button {
-  width: 10%;
-  cursor: pointer;
-  background-color: rgb(234, 69, 40);
-  color: black;
-  border-radius: 3px;
-}
 
 #consult_form > div:last-child {
   margin-top: 1%;
@@ -271,12 +279,8 @@ h2 {
 .consult_interface {
   height: 90%;
   width: 100%;
-  border: solid;
-  border-width: 2px;
-  border-radius: 5px;
-  border-top-left-radius: 0px;
+  border: 0.1rem solid grey;
   font-family: Arial;
-  border-color: grey;
   overflow: auto;
   display: flex;
   flex-direction: column;
@@ -292,6 +296,7 @@ h2 {
   overflow: auto;
   direction: ltr;
   margin: 1%;
+  margin-top: 1.7rem;
   flex-direction: column;
   padding-left: 2rem;
 }
@@ -335,19 +340,14 @@ h2 {
 
 #historic {
  display: flex;
- height: 80%;
+ height: 85%;
  width: 30%;
  display: flex;
  flex-direction: column;
  align-items: center;
- margin: 1%;
- border: solid;
- border-width: 3px;
- border-radius: 5px;
- border-color: rgba(203, 202, 206, 0.8);
+ margin-top: 0.1rem;
  overflow: auto;
 }
-
 
 #resultarea {
   display: flex;
@@ -374,15 +374,6 @@ h2 {
   width: 60%;
 }
 
-.titlecontainer>h2 {
-  display: flex;
-  font-family: 'Arial', sans-serif;
-  font-weight: bold;
-  color: rgb(153, 101, 21);
-  margin-left: 1%;
-  height: 1.5rem;
-  text-align: center;
-}
 
 .titlecontainer {
   border: solid;
@@ -390,24 +381,38 @@ h2 {
   border-right: none;
   border-left: none;
   display: flex;
-  width: 100%;
+  width: 90%;
   height: 30px;
   align-items: center;
   justify-content: space-between;
-  border-color: rgba(203, 202, 206, 0.8);
+  font-size: x-large;
+  color: #2d025b;
+  padding-bottom: 0.3rem;
+  border-bottom: 0.1rem solid #2d025b;
+  font-weight: bolder;
+}
+
+.relation_label {
+  display: flex;
+  width: 25rem;
+  margin-top: 1.9rem;
+  height: fit-content;
+  font-size: x-large;
+  color: #2d025b;
+  padding-bottom: 0.3rem;
+  border-bottom: 0.1rem solid #2d025b;
+  align-items: center;
+  justify-content: space-between;
+  font-weight: bolder;
 }
 
 #result {
   display: flex;
   width: 70%;
-  height: 90%;
+  height: 85%;
   margin-right: 2%;
   align-items: center;
   flex-direction: column;
-  border: solid;
-  border-width: 3px;
-  border-radius: 3px;
-  border-color: rgba(203, 202, 206, 0.8);
   overflow: auto;
 }
 
@@ -523,20 +528,6 @@ h2 {
   font-weight: 500;
 }
 
-.relation_label {
-   display: flex;
-   width: 25rem;
-   margin-top: 1.7rem;
-   height: fit-content;
-   font-size: x-large;
-   color: #2d025b;
-   padding-bottom: 0.3rem;
-   border-bottom: 0.2rem solid #2d025b;
-   align-items: center;
-   justify-content: flex-start;
-   font-weight: bolder;
-}
-
 .topbarextension {
   width: 100%;
   height: fit-content;
@@ -566,7 +557,6 @@ h2 {
   border: 0.1rem solid grey;
   box-sizing: border-box;
 }
-
 
 
 .close_button {
@@ -631,6 +621,8 @@ h2 {
   width: min-content;
   min-width: fit-content;
   height: fit-content;
+  transition: background-color 0.3s ease;
+  background-color: transparent;
 }
 
 .operator-symbol {
@@ -640,6 +632,8 @@ h2 {
   height: 100%;
   align-items: center;
   justify-content: center;
+  width: 3rem; 
+  height: 3rem; 
 }
 
 .input-atributes {
@@ -688,6 +682,10 @@ h2 {
   transition: width 0.2s ease; 
 }
 
+.simple_relation:focus::placeholder {
+  color: #2d025e;
+  font-weight: 400;
+}
 
 .relationArea > span:first-child {
   display: flex;
@@ -929,6 +927,7 @@ h2 {
   font-size: xx-large;
   text-indent: 0;
 }
+
 .create-db-button {
   display: flex;
   align-items: center;
@@ -948,6 +947,30 @@ h2 {
   margin-bottom: 0.2rem;
 }
 
+
+.consultform_buttons_container >button:last-child {
+  width: 9rem;
+  height: fit-content;
+  border-color: transparent;
+  height: 2.5rem;
+  cursor: pointer;
+  font-size: 1rem;
+  color: white;
+}
+
+.consultform_buttons_container > button:nth-child(2) {
+  background-color: forestgreen !important;
+}
+
+.consultform_buttons_container > button:nth-child(2):hover {
+  background-color: #2E9A2E !important;
+}
+
+.consultform_buttons_container >button:first-child {
+  margin-right: 0.5rem;
+  width: 20rem;
+}
+
 .create-db-button::after {
   content: '';
   position: absolute;
@@ -962,7 +985,7 @@ h2 {
 
 
 .create-db-button:hover::after {
-  width: 70%; 
+  width: 75%; 
 }
 .create-db-button .icon-arrow {
   color: forestgreen;
@@ -1182,18 +1205,10 @@ td {
   background-color: white;
 }
 
-.text_query_container {
-  display: flex;
-  align-items: center;
-  width: fit-content;
-  justify-self: flex-start;
-  margin-left: 1rem;
-}
-
 .text_query {
   display: flex;
-  align-items: center;
-  width: 14rem;
+  align-items: center; /* Ensures vertical alignment of all elements */
+  width: fit-content; /* Ensure it adjusts based on content */
   white-space: nowrap; 
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1201,28 +1216,32 @@ td {
 
 .text_query_operator {
   font-size: 2rem;
-  text-align: center;
-  display: inline-block;
-  align-items: center;
+  display: flex; /* Flex allows better control over alignment */
+  align-items: center; /* Center operator symbol vertically */
+  justify-content: center;
+  margin-right: 5px; /* Space between operator and attributes */
+  margin-bottom: 0.6rem;
 }
 
 .text_query_attributes {
   font-size: 1rem;
-  vertical-align: sub;
-  display: inline-block;
+  display: flex; /* Change to flex to keep alignment consistent */
+  align-items: center; /* Vertical alignment for attributes */
   margin-right: 5px;
 }
 
 .text_query_relation {
   font-size: 1.2rem;
-  display: inline-block;
+  display: flex;
   align-items: center;
+  margin-bottom: 0.3rem;
 }
 
 .text_query_parentheses {
   font-size: 1.5rem;
-  text-align: center;
-  display: inline-block;
+  display: flex;
+  align-items: center; /* Center parentheses vertically */
+  margin-bottom: 0.6rem;
 }
 
 .consultform_buttons_container {
@@ -1232,36 +1251,6 @@ td {
   align-items: flex-end;
   margin-top: 0.5rem;
 }
-
-
-.consultform_buttons_container button {
-  width: 10rem;
-  height: fit-content;
-  border-radius: 3rem;
-  border-color: transparent;
-  height: 2.5rem;
-  color: white !important;
-  cursor: pointer;
-}
-
-.consultform_buttons_container > button:nth-child(1) {
-  background-color: rgb(165, 0, 0) !important;
-  margin-right: 0.5rem;
-}
-
-.consultform_buttons_container > button:nth-child(2) {
-  background-color: forestgreen !important;
-}
-
-.consultform_buttons_container > button:nth-child(2):hover {
-  background-color: #2E9A2E !important;
-}
-
-.consultform_buttons_container > button:nth-child(1):hover {
-  background-color: rgba(180, 0, 0) !important;
-}
-
-
 
 .variable {
   min-width: 10rem;
@@ -1283,7 +1272,7 @@ td {
   display: flex;
   text-overflow: ellipsis;
   border-radius: 1rem;
-  background-color: rgba(203, 202, 206, 0.1);;
+  background-color: rgba(203, 202, 206, 0.1);
 }
 
 
@@ -1331,6 +1320,7 @@ td {
   align-items: center;
   justify-content: center;
   font-size: large;
+  background-color: rgba(220, 220, 220, 1);
 }
 
 .line_button:hover {
@@ -1418,3 +1408,90 @@ td {
   margin-top: 0.4rem;
 }
 
+.change_db {
+  display: inline-block;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  padding: 0;
+}
+
+.change_db i {
+  width: fit-content;
+  height: fit-content;
+  margin-right: 0.5rem;
+  font-size: large;
+  font-weight: 600;
+  color: #2d025b;
+}
+
+.change_db input[type="file"], .change_db button {
+  display: none; 
+}
+
+.tooltip {
+  position: absolute;
+  background-color: rgba(59, 49, 118, 0.9); /* Cor de fundo roxa */
+  color: #fff; /* Cor do texto branca */
+  padding: 0.5rem;
+  border-radius: 0.3125rem; /* 5px em rem */
+  font-size: 0.9rem;
+  font-family: 'Co Headline', sans-serif;
+  box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2); /* Sombra */
+  white-space: normal; /* Permite múltiplas linhas */
+  z-index: 1000;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.3s ease 0.5s, visibility 0.3s ease 0.8s; /* Atraso de 0.5s */
+  width: fit-content;
+  max-width: 40rem; 
+  height: auto; /* Altura automática para ajustar ao conteúdo */
+}
+
+.tooltip::before {
+  content: '';
+  position: absolute;
+  top: -0.6rem;
+  left: 2rem;
+  border-width: 0 0.625rem 0.625rem 0;
+  border-style: solid;
+  border-color: transparent transparent rgba(59, 49, 118, 0.9) transparent;
+}
+
+.operator-symbol:hover {
+  cursor: pointer;
+}
+
+.variable {
+  font-size: 2rem;
+  align-items: center;
+  justify-content: center;
+}
+
+.variable::placeholder {
+  font-size: 1.3rem;
+  text-align: center;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  justify-content: center;
+}
+
+@keyframes pulse {
+  0% {
+      transform: scale(1);
+      background-color:  rgba(220, 220, 220, 1);
+  }
+  50% {
+      transform: scale(1.1);
+      background-color: rgb(105, 105, 105); 
+      color: white;
+  }
+  100% {
+      transform: scale(1);
+      background-color: rgba(220, 220, 220, 1); 
+  }
+}
+
+.pulse {
+  animation: pulse 0.5s ease-in-out infinite;
+}
