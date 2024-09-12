@@ -14,6 +14,7 @@ import sqlite3
 from io import BytesIO
 import time
 import queue
+from collections import Counter
 
 
 def limpar_arquivos_session():
@@ -404,13 +405,6 @@ def loadfile(file=None):
             return jsonify([tuples, relations_details_structure])
         except Exception as e:
             return jsonify({'erro': str(e)}), 500
-    
-    else:
-        if 'file' not in request.files:
-            return jsonify({'erro': 'Nenhum arquivo foi enviado!'}), 400
-        file = request.files['file']
-        check_refresh()
-        return loadfile(file=file)
 
 @app.route('/prototipo', methods=['GET'])
 def prototipo():
@@ -484,57 +478,89 @@ def insert():
     else:
         return jsonify({'error': 'Session not initialized'}), 400
 
-
 @app.route('/createdbfile', methods=['POST'])
-def createdbfile(db = None):
+def createdbfile(db=None):
     global count
     if 'session_init' not in session:
-        print('entrou')
         session['session_init'] = count
         session['page_visited'] = True 
-        relations_details_structure = []
-        conn = sqlite3.connect(f"{str(session['session_init'])}.db")
-        cursor = conn.cursor()
-        if db == None:
+
+    relations_details_structure = []
+    
+    try:
+        if db is None:
             db = request.get_json()
+        
+        tablenames = []
         for table, info in db.items():
             tablename = info["tablename"]
-            attr_types = ", ".join([f"{attribute} {typ}" for attribute, typ in zip(
-                info["attributes"], info["types"])])
+            attributes = info["attributes"]
+            
+            # Verifica se o nome da tabela foi usado mais de uma vez
+            if tablename in tablenames:
+                raise ValueError(f"O Nome {tablename} foi utilizado mais de uma vez para tabelas diferentes")
+            
+            tablenames.append(tablename)
+
+            # Verifica se há atributos repetidos
+            verify = Counter(attributes)
+            rep = [item for item, freq in verify.items() if freq > 1]
+            if len(rep) > 0:
+                raise ValueError(f"Atributo(s) repetido(s): {', '.join(rep)}")
+
+    except Exception as e:
+        # Limpa a sessão se houver algum erro nas verificações
+        session.clear()
+        return make_response(jsonify({'error': str(e)}), 400)
+    
+    # Segunda etapa: Criar o banco de dados e inserir as tabelas/dados
+    bd_name = f"{str(session['session_init'])}.db"
+    
+    try:
+        conn = sqlite3.connect(bd_name)
+        cursor = conn.cursor()
+
+        for table, info in db.items():
+            tablename = info["tablename"]
+            attributes = info["attributes"]
+            types = info["types"]
+
+            # Cria a tabela
+            attr_types = ", ".join([f"{attribute} {typ}" for attribute, typ in zip(attributes, types)])
             cursor.execute(f"CREATE TABLE {tablename} ({attr_types})")
-            for tuple in info["tuples"]:
-                placeholders = ", ".join(["?"] * len(tuple))
-                cursor.execute(
-                    f"INSERT INTO {tablename} VALUES ({placeholders})", tuple)
+
+            # Insere os dados
+            for tuple_values in info["tuples"]:
+                placeholders = ", ".join(["?"] * len(tuple_values))
+                cursor.execute(f"INSERT INTO {tablename} VALUES ({placeholders})", tuple_values)
+
         conn.commit()
         conn.close()
-        bd_name = f"{str(session['session_init'])}.db"
-        requisition_queue.put(
-            [ralib.RA(bd_name), session['session_init'], 1])
-        requisition_queue.put(
-            [f"radb {bd_name}", session['session_init'], 2])
+
+        # Processa os dados
+        requisition_queue.put([ralib.RA(bd_name), session['session_init'], 1])
+        requisition_queue.put([f"radb {bd_name}", session['session_init'], 2])
         result_queue.get()
         count += 1
-        try:
-            requisition_queue.put(['\list;', session['session_init'], 2])
-            result = result_queue.get()
-            relations_labels, tuples = reform_list(result, 'list')
-            for item in relations_labels:
-                match = re.match(r'(\w+)\((.*?)\)', item)
-                if match:
-                    nome_relacao = match.group(1).strip()
-                    atributos_str = match.group(2)
-                    atributos = [atributo.strip()
-                                 for atributo in atributos_str.split(',')]
-                    relations_details_structure.append(
-                        [nome_relacao] + atributos)
-            return jsonify([tuples, relations_details_structure])
-        except Exception as e:
-            return jsonify({'erro': e})
-    else:
-        db = request.get_json()
-        check_refresh()
-        return createdbfile(db = db)
+
+        # Obter as relações e retornar
+        requisition_queue.put(['\list;', session['session_init'], 2])
+        result = result_queue.get()
+        relations_labels, tuples = reform_list(result, 'list')
+
+        for item in relations_labels:
+            match = re.match(r'(\w+)\((.*?)\)', item)
+            if match:
+                nome_relacao = match.group(1).strip()
+                atributos_str = match.group(2)
+                atributos = [atributo.strip() for atributo in atributos_str.split(',')]
+                relations_details_structure.append([nome_relacao] + atributos)
+
+        return jsonify([tuples, relations_details_structure])
+
+    except Exception as e:
+        session.clear()
+        return make_response(jsonify({'error': str(e)}), 500)
 
 @app.route('/deletetable', methods = ['POST'])
 def deletetable():
@@ -631,10 +657,9 @@ def delete_user_archive(archive_name):
         return
     return    
 
-
-def check_refresh():
-    global instances
-    if 'page_visited' in session:
+@app.route('/logout', methods=['POST'])
+def logout():
+     if 'page_visited' in session:
         user_number = session['session_init']
         requisition_queue.put([None, user_number, 3])
         requisition_queue.put(['\quit;', user_number, 2])
@@ -642,6 +667,7 @@ def check_refresh():
         instances.pop(user_number, None) 
         delete_user_archive(user_number)
         session.clear() 
+     return '', 204   
 
 atexit.register(limpar_arquivos_session)
 atexit.register(clean_db_files)

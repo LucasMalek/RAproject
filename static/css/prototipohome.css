@@ -63,8 +63,9 @@
   flex-direction: row;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: 1rem;
   margin-right: 3rem;
+  margin-bottom: 5rem;
 }
 
 .userchoicecontainer button, .userchoicecontainer label {
@@ -114,9 +115,10 @@ h2 {
 }
 
 #logo {
-    width: 40%;
-    height: 45%;
+    width: 50%;
+    height: 55%;
     margin-right: 3rem;
+    margin-bottom: 1rem;
 }
 
 #logotopbar {
@@ -239,6 +241,7 @@ h2 {
   border-right: 0.1rem solid grey; 
   font-weight: 500;
   position: relative;
+  font-family: 'Co Headline', sans-serif;
 }
 
 .keyboard button:last-child {
@@ -416,6 +419,13 @@ h2 {
   overflow: auto;
 }
 
+#result h1 {
+  display: flex;
+  color: rgb(183, 181, 191);
+  font-weight: 600;
+  align-self: center;
+}
+
 .result_label {
   width: 100%;
   height: fit-content;
@@ -526,6 +536,18 @@ h2 {
   transition: background-color 0.3s ease;
   font-size: medium;
   font-weight: 500;
+  align-items: center;
+  justify-content: center;
+}
+
+.consult_observation {
+  font-size: 0.8rem;
+  color: rgba(183, 181, 191, 1); /* Leve contraste com o fundo */
+  text-align: left; /* Texto à esquerda */
+  width: 60%; /* Ajusta a largura para não ocupar todo o espaço */
+  padding-left: 0.2rem;
+  padding-bottom: 0.1rem;
+  font-family: 'Co Headline', sans-serif; /* Mesma fonte do h1 */
 }
 
 .topbarextension {
@@ -948,7 +970,7 @@ h2 {
 }
 
 
-.consultform_buttons_container >button:last-child {
+.consultform_buttons_container > button:last-of-type {
   width: 9rem;
   height: fit-content;
   border-color: transparent;
@@ -958,15 +980,15 @@ h2 {
   color: white;
 }
 
-.consultform_buttons_container > button:nth-child(2) {
+.consultform_buttons_container > button:nth-of-type(2) {
   background-color: forestgreen !important;
 }
 
-.consultform_buttons_container > button:nth-child(2):hover {
+.consultform_buttons_container > button:nth-of-type(2):hover {
   background-color: #2E9A2E !important;
 }
 
-.consultform_buttons_container >button:first-child {
+.consultform_buttons_container > button:first-of-type {
   margin-right: 0.5rem;
   width: 20rem;
 }
@@ -982,7 +1004,6 @@ h2 {
   transform: translateX(-50%);
   transition: width 0.3s ease;
 }
-
 
 .create-db-button:hover::after {
   width: 75%; 
@@ -1264,7 +1285,7 @@ td {
   margin-top: 1rem;
   height: fit-content;
   max-height: 35%;
-  overflow: hidden;
+  overflow: auto;
   margin-bottom : 1rem;
   width : 90%;
   flex-direction: column;
@@ -1325,7 +1346,7 @@ td {
 
 .line_button:hover {
   color: white;
-  background-color: rgb(105, 105, 105);
+  background-color: rgb(105, 105, 105) !important;
   cursor: pointer;
 }
 
@@ -1343,17 +1364,21 @@ td {
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  margin-bottom: 0.2rem;
+  position: sticky; 
+  bottom: 0; 
+  z-index: 10; 
+  padding: 0.5rem 0;
   width: 100%;
-  height: fit-content;
 }
 
 .historic_container_header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: fit-content;
-  margin-top: 1rem;
+  position: sticky; 
+  top: 0;
+  z-index: 10; 
+  padding: 0.5rem 0;
   width: 100%;
 }
 
@@ -1386,6 +1411,12 @@ td {
   justify-content: flex-start;
   margin-left: 2rem;
   margin-top: 1rem;
+  padding-left: 0.1rem;
+  padding-right: 0.1rem;
+}
+
+.container_case_overflow .text_query {
+  overflow: visible;
 }
 
 .horizontalelipses {
@@ -1431,21 +1462,21 @@ td {
 
 .tooltip {
   position: absolute;
-  background-color: rgba(59, 49, 118, 0.9); /* Cor de fundo roxa */
-  color: #fff; /* Cor do texto branca */
+  background-color: rgba(59, 49, 118, 1); 
+  color: #fff; 
   padding: 0.5rem;
-  border-radius: 0.3125rem; /* 5px em rem */
+  border-radius: 0.3125rem; 
   font-size: 0.9rem;
   font-family: 'Co Headline', sans-serif;
-  box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2); /* Sombra */
-  white-space: normal; /* Permite múltiplas linhas */
+  box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.2); 
+  white-space: normal; 
   z-index: 1000;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.3s ease 0.5s, visibility 0.3s ease 0.8s; /* Atraso de 0.5s */
+  transition: opacity 0.3s ease 0.5s, visibility 0.3s ease 0.8s; 
   width: fit-content;
   max-width: 40rem; 
-  height: auto; /* Altura automática para ajustar ao conteúdo */
+  height: auto; 
 }
 
 .tooltip::before {
@@ -1494,4 +1525,16 @@ td {
 
 .pulse {
   animation: pulse 0.5s ease-in-out infinite;
+}
+
+.db-entry-prompt {
+  font-family: 'Co Headline', sans-serif; /* Mantém a consistência da fonte */
+  font-size: 1.5rem;
+  font-weight: 400; /* Deixa o texto leve */
+  color: #CBCACE; /* Uma cor suave e consistente com o restante do design */
+  margin-bottom: 0.2rem;
+  margin-right: 1rem;
+  text-align: center; /* Centraliza o texto */
+  opacity: 0.85; /* Dá um efeito sutil de transparência */
+  margin-top: 1rem;
 }

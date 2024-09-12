@@ -26,6 +26,7 @@
     <div class="maincontentborder">
       <div class="contentcontainer">
         <img src="../static/images/Logo.png" id="logo">
+        <div class="db-entry-prompt">Como você deseja entrar com o Banco de Dados?</div>
         <form class="userchoicecontainer">
           <label for="fileInput">Selecionar arquivo .db</label>
           <input type="file" id="fileInput" accept=".db">
@@ -99,6 +100,9 @@
       <form method="post" id="consult_form">
           <div class="consult_interface"></div>
           <div class="consultform_buttons_container">
+            <span class="consult_observation">Obs: <br>1. Se os valores dos atributos nas condições das operações for uma string, 
+              <br>é preciso colocar o valor entre aspas simples. Ex: Atr = 'Diego'. 
+              <br>2. Para inserir uma nova linha a partir da primeira linha, utilize o operador 'Atribuição'.</span>
             <button onclick="deletealloperators()"  type="button" class="create-db-button">
               <i class="fas fa-trash icon-trash" style="margin-right: 0.8rem; color: red;"></i>Apagar todos os operadores
             </button>
@@ -118,12 +122,13 @@
           <div class="titlecontainer">
             Resultado
           </div>
+          <h1>O resultado de suas consultas apareceram aqui</h1>
         </div>
       </div>
   <script>
     const form = document.querySelector('.userchoicecontainer');
 
-    document.getElementById('fileInput').addEventListener('change', function(event) {
+document.getElementById('fileInput').addEventListener('change', function(event) {
         const file = event.target.files[0];
         if (file) {
             const fileName = file.name.toLowerCase();
@@ -135,7 +140,7 @@
         }
     });
 
-    form.addEventListener('submit', function(event) {
+form.addEventListener('submit', function(event) {
         event.preventDefault();
         const fileInput = document.getElementById('fileInput');
         const selectedFile = fileInput.files[0];
@@ -149,7 +154,7 @@
         loadercircle.style.height = '2rem';
         loadercircle.style.marginTop = '0';
         loadercircle.style.position = 'absolute';
-        loadercircle.style.top = '78%';
+        loadercircle.style.top = '85%';
         loadercircle.style.left = '48%';
         document.querySelector('.contentcontainer').appendChild(loadercircle);
         let formData = new FormData();
@@ -693,47 +698,51 @@ function createtabletablistener() {
 } 
 
 function tablistener() {
-      Array.from(document.querySelector('.tab_container').children).forEach(element => {
+  Array.from(document.querySelector('.tab_container').children).forEach(element => {
       
-       element.addEventListener('mouseover', function() {
-          if(element.id != last_tab) {
-            element.style.backgroundColor = 'rgba(87, 48, 129, 1)';
+      element.addEventListener('mouseover', function() {
+          if (element.id != last_tab) {
+              element.style.backgroundColor = 'rgba(87, 48, 129, 1)';
           }
-       })
-      
+      });
+
       element.addEventListener('click', function() {
-        element.style.backgroundColor = '#e0463a';
-    
-        let children = Array.from(document.querySelector('.maincontentborder').children);
-        
-        children.forEach(child => {
-            child.style.display = 'none';
-        });
-        
-        let childToShow
-        if(element.id == 'consult') {
-            childToShow = document.querySelector('.consultcontainer')
-        }else {
-          childToShow = document.querySelector('.resultcontainer')
-        }
+       
+          if (element.id != last_tab) {
+              element.style.backgroundColor = '#e0463a';
+
+              let children = Array.from(document.querySelector('.maincontentborder').children);
+              children.forEach(child => {
+                  child.style.display = 'none';
+              });
+
          
-        if (childToShow) {
-            childToShow.style.display = 'flex';
-        }
+              let childToShow;
+              if (element.id == 'consult') {
+                  childToShow = document.querySelector('.consultcontainer');
+              } else {
+                  childToShow = document.querySelector('.resultcontainer');
+              }
 
-        document.querySelector(`#${last_tab}`).style.backgroundColor = 'rgba(87, 48, 129, 0.8)';
+              if (childToShow) {
+                  childToShow.style.display = 'flex';
+              }
+
+          
+              document.querySelector(`#${last_tab}`).style.backgroundColor = 'rgba(87, 48, 129, 0.8)';
+              
         
-        last_tab = element.id;
-          })
+              last_tab = element.id;
+          }
+      });
 
-        element.addEventListener('mouseout', function() {
-            if(element.id != last_tab) {
-                element.style.backgroundColor = 'rgba(87, 48, 129, 0.8)'; 
-            }
-        })
-
-        })
-    }
+      element.addEventListener('mouseout', function() {
+          if (element.id != last_tab) {
+              element.style.backgroundColor = 'rgba(87, 48, 129, 0.8)';
+          }
+      });
+  });
+}
 
 function removeOperatorByIndex(line, position, father) {
               if (father != null) {
@@ -1141,9 +1150,8 @@ document.addEventListener('DOMContentLoaded', addOperatorInfo);
 
 function operatorspropertieslisteners() {
   document.querySelectorAll('.operator-container').forEach((operatorContainer) => {
-    console.log(operatorContainer);
     let line = parseInt(operatorContainer.getAttribute('line'));
-    console.log(line);
+
     let position = parseInt(operatorContainer.getAttribute('position'));
     let attributevaluecontainer = operatorContainer.querySelector(':scope > .attribute-value-container');
     let inputAttributes;
@@ -1177,7 +1185,6 @@ function operatorspropertieslisteners() {
 
               if (parentElement) {
                 let parentLine = parseInt(parentElement.getAttribute('line'));
-                console.log(`Encontrado operator-container pai com line: ${parentLine}`);
 
                 if (element.classList.contains('variable')) {
                   if (operators[parentLine][0] == null) {
@@ -1187,7 +1194,6 @@ function operatorspropertieslisteners() {
                 }
                 operators[parentLine][position].relation[simplerelationindex] = element.value;
               } else {
-                console.error('Não foi possível encontrar o operator-container pai');
               }
             });
             element.setAttribute('listener-added', 'true');
@@ -1234,8 +1240,8 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
       for (let [index, line] of data.entries()) {
           let line_button = document.createElement('BUTTON');
           line_button.className = 'line_button';
-          line_button.textContent = `${index}`;
-          line_button.title = `Linha ${index} da consulta`;
+          line_button.textContent = `${index + 1}`;
+          line_button.title = `Linha ${index + 1} da consulta`;
           line_button_container.appendChild(line_button);
           let buttonoriginalcolor = line_button.style.color;
           let [line_result, line_text] = resultlines(line, result, historicarea, userconsult, titlearea);
@@ -1366,12 +1372,6 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
 
       text_query_historic_container.querySelectorAll('.container_case_overflow').forEach((element, index) => {
         child = element.children[0];
-        if(child.clientWidth < child.scrollWidth) {
-          const horizontalelipses = document.createElement('div');
-          horizontalelipses.className = 'horizontalelipses';
-          horizontalelipses.textContent = '...';
-          element.appendChild(horizontalelipses);
-        }
         if(verticaloverflow) {
           const verticalelipses = document.createElement('div');
           verticalelipses.className = 'vertical_elipses';
@@ -1389,12 +1389,34 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
         finalbutton.classList.remove('pulse');
         finalbutton.click();
       }, 1500);
-      
+      document.querySelectorAll('.text_query_historic_container').forEach((scrollContainer) => {
+        scrollContainer.addEventListener('scroll', function() {
+          adjustHeaderAndButtons(scrollContainer);
+        });
+      });
   }).catch(error => {
       alert(error.message)
   });
-
 });
+
+function adjustHeaderAndButtons(scrollContainer) {
+  // Seleciona os containers relacionados ao contêiner de rolagem atual
+  const headerContainer = scrollContainer.querySelector('.historic_container_header');
+  const buttonsContainer = scrollContainer.querySelector('.historic_buttons_container');
+
+  // Verifica se os containers existem
+  if (!headerContainer || !buttonsContainer) {
+    console.error("Containers não encontrados.");
+    return;
+  }
+
+  // Captura a posição de rolagem horizontal
+  const scrollLeft = scrollContainer.scrollLeft;
+
+  // Aplica a transformação para mover os elementos junto com a rolagem
+  headerContainer.style.transform = `translateX(${scrollLeft}px)`;
+  buttonsContainer.style.transform = `translateX(${scrollLeft}px)`;
+}
 
 function resultlines(data, result, historicarea, userconsult, titlearea) {
   let newresultarea = document.createElement('div');
@@ -1425,7 +1447,6 @@ function resultlines(data, result, historicarea, userconsult, titlearea) {
     none_returned.style.width = '100%';
     none_returned.textContent = data[0];
     newresultarea.appendChild(none_returned);
-    console.log(none_returned);
     return [newresultarea, text_query];
   }
   
@@ -1904,129 +1925,138 @@ function printdbtables(data, requisition) {
       }
       
 function sendbdtocreate(route) {
-    let db = {};
-    const loadercircle = document.createElement('div');
-    loadercircle.className = 'create_db_loadercircle';
-    if(`${route}` != 'deletetuple') {
-        let count = 1;
-        let tables = document.querySelectorAll('#tab_display');
-        const container = tables[0].parentNode.querySelector('.buttons_container_for_table_container');
-        container.insertBefore(loadercircle, container.firstChild);
-        try {
-          tables.forEach(table => {
-              let tablename = table.getAttribute('tablename');
-              let attributes = [];
-              let types = [];
-              let tuples = [];
-      
-              table.querySelectorAll('.create_atribute_name').forEach(atributename => {
-                  if(atributename.value === '') {
-                      throw new Error(`Existem nomes de atributos vazios na tabela: ${table.getAttribute('tabnumber')}`);
-                  }
-                  attributes.push(atributename.value);
-              });
-      
-              table.querySelectorAll('.attribute_type').forEach(type => {
-                  if(type.value === 'none') {
-                      throw new Error(`Existem tipos de atributos não selecionados na tabela: ${table.getAttribute('tabnumber')}`);
-                  }
-                  types.push(type.value);
-              });
-      
-              let tupleDOM = table.querySelectorAll('.tuple_input');
-              tupleDOM.forEach(tuple => {
-                  let array = [];
-                  tuple.querySelectorAll('.create_tuple_element').forEach(cellvalue => {
-                      if(cellvalue.value === '') {
-                          throw new Error(`Existem valores de atributos vazios na tabela: ${table.getAttribute('tabnumber')}`);
+        let db = {};
+        const loadercircle = document.createElement('div');
+        loadercircle.className = 'create_db_loadercircle';
+        if(`${route}` != 'deletetuple') {
+            let count = 1;
+            let tables = document.querySelectorAll('#tab_display');
+            const container = tables[0].parentNode.querySelector('.buttons_container_for_table_container');
+            container.insertBefore(loadercircle, container.firstChild);
+            try {
+              tables.forEach(table => {
+                  let tablename = table.getAttribute('tablename');
+                  let attributes = [];
+                  let types = [];
+                  let tuples = [];
+          
+                  table.querySelectorAll('.create_atribute_name').forEach(atributename => {
+                      if(atributename.value === '') {
+                          throw new Error(`Existem nomes de atributos vazios na tabela: ${table.getAttribute('tabnumber')}`);
                       }
-                      array.push(cellvalue.value); 
+                      attributes.push(atributename.value);
                   });
-                  tuples.push(array);
-              });
-              db[count] = {
-                  tablename: tablename,
-                  attributes: attributes,
-                  types: types,
-                  tuples: tuples
-              };
-              count = count + 1;
-          });
-      } catch (e) {
-          return alert(e.message);
-      } 
-        fetch(`/${route}`, {
-          method: 'POST',
-          body: JSON.stringify(db),
-          headers: {
-            'Content-Type': 'application/json' 
-          }
-        }).then(response => {
-          if (!response.ok) {
-              throw new Error('Erro na requisição');
-          } else {
-               deletecreatetable(document.querySelector('#create_table_container'))
-               return response.json()
-              }
-        }).then( db => {
-          if(['insert', 'update'].includes(`${route}`)) {
-            printdbtables(db, `${route}`)
-          }else {
-            document.querySelector('.create_db_loadercircle').remove();
-            initializesystem(db)
-          }
-        }) 
-        }else {
-          const delete_tuple_interface = document.querySelector('.delete_tuple_interface');
-          const buttoncontainer = delete_tuple_interface.parentNode.querySelector('.remove_tuple_action_container');
-          const deletebutton = buttoncontainer.querySelector('.create-db-button');
-          buttoncontainer.insertBefore(loadercircle, deletebutton);
-          const tablename = delete_tuple_interface.querySelector('.table_name').textContent.trim();
-          let attributes = [];
           
-          const tuples_to_delete = Array.from(delete_tuple_interface.querySelectorAll('tr')).map((element, index) => {
-            if (index === 0) {
-              attributes = Array.from(element.querySelectorAll('th')).slice(1).map(attributevalue => {
-                return attributevalue.textContent.split(':')[0].trim();
+                  table.querySelectorAll('.attribute_type').forEach(type => {
+                      if(type.value === 'none') {
+                          throw new Error(`Existem tipos de atributos não selecionados na tabela: ${table.getAttribute('tabnumber')}`);
+                      }
+                      types.push(type.value);
+                  });
+          
+                  let tupleDOM = table.querySelectorAll('.tuple_input');
+                  tupleDOM.forEach(tuple => {
+                      let array = [];
+                      tuple.querySelectorAll('.create_tuple_element').forEach((cellvalue, index) => {
+                          if(cellvalue.value === '') {
+                              throw new Error(`Existem valores de atributos vazios na tabela: ${table.getAttribute('tabnumber')}`);
+                          }
+                      
+                          if(types[index] === 'INT' && !/^\d+$/.test(cellvalue.value)) {
+                              throw new Error(`O valor do atributo "${attributes[index]}" na tabela ${table.getAttribute('tabnumber')} precisa ser um número.`);
+                          }
+                          array.push(cellvalue.value); 
+                      });
+                      tuples.push(array);
+                  });
+                  db[count] = {
+                      tablename: tablename,
+                      attributes: attributes,
+                      types: types,
+                      tuples: tuples
+                  };
+                  count = count + 1;
               });
-              return null; 
+          } catch (e) {
+              return alert(e.message);
+          } 
+            fetch(`/${route}`, {
+              method: 'POST',
+              body: JSON.stringify(db),
+              headers: {
+                'Content-Type': 'application/json' 
+              }
+            }).then(response => {
+              if (!response.ok) {
+                  return response.json().then(error => {
+                    document.querySelector('.create_db_loadercircle').remove();
+                    throw new Error(error.error);  
+                })
+              } else {
+                   deletecreatetable(document.querySelector('#create_table_container'))
+                   return response.json()
+                  }
+            }).then( db => {
+              if(['insert', 'update'].includes(`${route}`)) {
+                printdbtables(db, `${route}`)
+              }else {
+                document.querySelector('.create_db_loadercircle').remove();
+                initializesystem(db)
+              }
+            }).catch(error => {
+              alert(error.message);  
+             });
             } else {
-              const checkboxmarked = element.querySelector('td > input[type="checkbox"]:checked');
-              if (checkboxmarked) {
-                const tuple_values = Array.from(element.querySelectorAll('td')).slice(1).map((value, index) => {
-                  return [attributes[index], value.textContent.trim()];
-                });
-                return tuple_values;
-              }
+              const delete_tuple_interface = document.querySelector('.delete_tuple_interface');
+              const buttoncontainer = delete_tuple_interface.parentNode.querySelector('.remove_tuple_action_container');
+              const deletebutton = buttoncontainer.querySelector('.create-db-button');
+              buttoncontainer.insertBefore(loadercircle, deletebutton);
+              const tablename = delete_tuple_interface.querySelector('.table_name').textContent.trim();
+              let attributes = [];
+              
+              const tuples_to_delete = Array.from(delete_tuple_interface.querySelectorAll('tr')).map((element, index) => {
+                if (index === 0) {
+                  attributes = Array.from(element.querySelectorAll('th')).slice(1).map(attributevalue => {
+                    return attributevalue.textContent.split(':')[0].trim();
+                  });
+                  return null; 
+                } else {
+                  const checkboxmarked = element.querySelector('td > input[type="checkbox"]:checked');
+                  if (checkboxmarked) {
+                    const tuple_values = Array.from(element.querySelectorAll('td')).slice(1).map((value, index) => {
+                      return [attributes[index], value.textContent.trim()];
+                    });
+                    return tuple_values;
+                  }
+                }
+                return null;
+              }).filter(item => item !== null);
+              
+              db = {
+                tablename: tablename,
+                tuples_to_delete: tuples_to_delete
+              };
+    
+              fetch(`/${route}`, {
+                method: 'POST',
+                body: JSON.stringify(db),
+                headers: {
+                  'Content-Type': 'application/json' 
+                }
+              }).then(response => {
+                if (!response.ok) {
+                  throw new Error('Erro na requisição');
+                } else {
+                  document.body.removeChild(document.querySelector('.complete_table'))
+                  loadercircle.remove();
+                  return response.json()
+                 }
+              }).then(db => {
+                printdbtables(db, `${route}`)
+              })
             }
-            return null;
-          }).filter(item => item !== null);
-          
-          db = {
-            tablename: tablename,
-            tuples_to_delete: tuples_to_delete
-          };
-
-          fetch(`/${route}`, {
-            method: 'POST',
-            body: JSON.stringify(db),
-            headers: {
-              'Content-Type': 'application/json' 
-            }
-          }).then(response => {
-            if (!response.ok) {
-              throw new Error('Erro na requisição');
-            }else {
-              document.body.removeChild(document.querySelector('.complete_table'))
-              loadercircle.remove();
-              return response.json()
-             }
-          }).then(db => {
-            printdbtables(db, `${route}`)
-          })
-        }
-      }    
-     
+          }
+      
 function pegar() {
   console.log(operators)
 }
@@ -2039,6 +2069,7 @@ function operator_impression(operator) {
         }
 
 function tablenamelistener() {
+
   document.querySelector('.create-table-name').addEventListener('input', function(event) {
     const inputValue = event.target.value;
     const tabDisplays = document.querySelectorAll('#tab_display');
@@ -2049,6 +2080,10 @@ function tablenamelistener() {
     });
 });
 }
+
+window.addEventListener('beforeunload', function (e) {
+  navigator.sendBeacon('/logout'); 
+});
 </script>
 </body>
 </html>
