@@ -140,7 +140,6 @@ db_thread = threading.Thread(target=process_db_tasks)
 db_thread.daemon = True
 db_thread.start()
 
-
 def returnqueryUnary(operator, atributes, relation_structured, operator_code):
     
     def format_unary_html(operator_code, attributes, relation):
@@ -573,7 +572,6 @@ def deletetable():
         conn.close()
         return 'ok', 200
     
-
 @app.route('/update', methods=['POST'])
 def update():
     if 'session_init' in session:
@@ -605,7 +603,6 @@ def update():
                 relations_details_structure.append([nome_relacao] + atributos)
 
         return jsonify([tuples, relations_details_structure])
-
 
 @app.route('/deletetuple', methods = ['POST'])
 def deletetuple():
@@ -644,8 +641,7 @@ def deletetuple():
 
      else:
             return jsonify({'error': 'Session not initialized'}), 400
-  
-  
+   
 def delete_user_archive(archive_name):
     archive = f"{str(archive_name)}.db"
     if os.path.exists(archive):
