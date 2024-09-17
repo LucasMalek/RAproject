@@ -14,11 +14,11 @@
     width: 100%;
     height: 100vh; 
     align-items: center;
-    justify-content: center;
     background-image: url('../images/homepagebackground.png');
     background-repeat: no-repeat;
     background-size: cover; 
     background-position: center; 
+    justify-content: center;
   }
 
   .contentcontainer {
@@ -28,6 +28,8 @@
     justify-content: center;
     width: 100%;
     height: 100%;
+    margin-top: 4rem;
+    margin-right: 2rem;
     transition: opacity 1s ease-in-out;
   }
  
@@ -149,16 +151,12 @@ h2 {
   margin-top: 2em;
   align-items: end;
   justify-content: flex-start;
-  position: absolute;
-  top: 7.2%;
-  left: 5%;
-  z-index: 10;
   overflow-x: auto;
 }
 
 .tab_container > div {
   width: 9%;
-  height: 85%;
+  height: 60%;
   border-width: 5px;
   display: none;
   padding: 1.2rem;
@@ -171,6 +169,7 @@ h2 {
   font-size: x-large;
   align-items: center;
   flex-shrink: 0;
+  padding-top: 1rem;
 }
 
 .tab_container > #consult,
@@ -200,7 +199,6 @@ h2 {
   justify-content: center;
   width: 90%;
   height: 47.5rem;
-  margin-top: 4em;
   position: relative;
 }
 
@@ -212,11 +210,11 @@ h2 {
   opacity: 0;
   transition: opacity 1s ease-in-out;
   background-color: white;
-  border-width: 20px;
-  border-radius: 20px;
   border-color: white;
   overflow-wrap: break-word;
   box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
 }
 
 .keyboard {
@@ -354,7 +352,6 @@ h2 {
 
 #resultarea {
   display: flex;
-  align-items: center;
   flex-direction: column;
   justify-content: flex-start;
   width: 100%;
@@ -573,7 +570,7 @@ h2 {
   height: 31.5rem;
   position: absolute;
   left: 24rem;
-  top: 13rem;
+  top: 11.5rem;
   background-color: white;
   overflow: auto;
   border: 0.1rem solid grey;
@@ -738,9 +735,6 @@ h2 {
   height: 31.695rem;
   display: flex;
   width: 2rem;
-  left: 22rem;
-  top: 12.96rem;
-  position: absolute;
   background-color: #431c6d;
   box-shadow: 
     inset -3px 0px 5px rgba(0, 0, 0, 0.2),  
@@ -753,7 +747,7 @@ h2 {
   display: flex;
   width: 2rem;
   left: 3.8rem;
-  top: 7rem;
+  top: 7.7rem;
   position: absolute;
   background-color: #431c6d;
   box-shadow: 
@@ -768,19 +762,16 @@ h2 {
   width: 70rem;
   margin: 0 auto;
   border: 1px solid #ddd;
-  background-color: #f4f4f4;
+  background-color: white;
   height: 31.5rem;
   flex-direction: column;
   overflow: auto;
-  position: absolute;
-  left: 24rem;
-  top: 13rem;
-  overflow: auto;
+  z-index: 2000;
   
 }
 
 #create_table_container::-webkit-scrollbar-track {
-  background: #f4f4f4; 
+  background: white; 
 }
 
 .attribute-input {
@@ -937,7 +928,7 @@ h2 {
   outline: none;
   top: 0;
   z-index: 100;
-  background-color: #f4f4f4;
+  background-color: white;
   border-bottom: 0.1rem solid grey;
   margin-bottom: 1rem;
   padding-bottom: 1rem;
@@ -1020,7 +1011,7 @@ h2 {
   bottom: 0;
   left: 0;
   min-width: 100%;
-  background-color: rgba(245, 245, 245, 1);
+  background-color: white;
   display: flex;
   justify-content: flex-end;
   height: 2.45rem;
@@ -1092,7 +1083,7 @@ h2 {
   top: 0; 
   left: 0;
   justify-content: flex-end;
-  background-color: rgba(245, 245, 245, 1);
+  background-color: white;
   align-items: center;
   padding-top: 4rem;
   position: sticky;
@@ -1528,13 +1519,41 @@ td {
 }
 
 .db-entry-prompt {
-  font-family: 'Co Headline', sans-serif; /* Mantém a consistência da fonte */
+  font-family: 'Co Headline', sans-serif; 
   font-size: 1.5rem;
-  font-weight: 400; /* Deixa o texto leve */
-  color: #CBCACE; /* Uma cor suave e consistente com o restante do design */
+  font-weight: 400; 
+  color: #CBCACE; 
   margin-bottom: 0.2rem;
   margin-right: 1rem;
-  text-align: center; /* Centraliza o texto */
-  opacity: 0.85; /* Dá um efeito sutil de transparência */
+  text-align: center; 
+  opacity: 0.85; 
   margin-top: 1rem;
+}
+
+#createtablespace {
+  display: none;
+  flex-direction: column;
+  width: fit-content;
+  height: 41rem;
+}
+
+#tabdisplayspace {
+  display: none;
+  flex-direction: row;
+  width: fit-content;
+  height: fit-content;
+}
+
+.hypercontainer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.hyperhorizontal {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
 }

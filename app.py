@@ -16,7 +16,6 @@ import time
 import queue
 from collections import Counter
 
-
 def limpar_arquivos_session():
     diretorio_session = 'flask_session'
     if os.path.exists(diretorio_session):
@@ -490,13 +489,14 @@ def createdbfile(db=None):
         if db is None:
             db = request.get_json()
         
+        
         tablenames = []
         for table, info in db.items():
             tablename = info["tablename"]
             attributes = info["attributes"]
-            
             # Verifica se o nome da tabela foi usado mais de uma vez
             if tablename in tablenames:
+                print(tablename, tablenames)
                 raise ValueError(f"O Nome {tablename} foi utilizado mais de uma vez para tabelas diferentes")
             
             tablenames.append(tablename)

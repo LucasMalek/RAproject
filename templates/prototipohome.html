@@ -23,7 +23,11 @@
       <div id="consult">Consulta</div>
       <div id="results">Resultados</div>
     </div>
+    
     <div class="maincontentborder">
+      <div id="createtablespace">
+        <div id="tabdisplayspace"></div>
+      </div>
       <div class="contentcontainer">
         <img src="../static/images/Logo.png" id="logo">
         <div class="db-entry-prompt">Como você deseja entrar com o Banco de Dados?</div>
@@ -182,6 +186,7 @@ function initializesystem(db) {
       replacementContainer.setAttribute('class', 'consultcontainer');
       const contentContainer = document.querySelector('.contentcontainer');
       const containerborder = document.querySelector('.maincontentborder');
+      
       const consult_environment = document.querySelector('.consult_environment');
       const bd_area = document.querySelector('#bd');
       const resultcontainer = document.querySelector('.resultcontainer')
@@ -219,6 +224,7 @@ function initializesystem(db) {
             document.querySelector('.maincontainer').appendChild(containerfade);
             });
             change_db_listener();
+          
     }
 
 function change_db_listener() {
@@ -292,11 +298,14 @@ function handleChangeDB(event) {
     let createtableclone;
     let tablenames = [];
     let historic_results = [];
+    let createtablecompleteclone;
 
 document.addEventListener('DOMContentLoaded', () => {
-        document.querySelector('#create_table_container').style.display = 'flex'
-        createtableclone = document.querySelector('#tab_display').cloneNode(true);
-        document.querySelector('#create_table_container').style.display = 'none';
+         createtable = document.querySelector('#create_table_container')
+         createtablecompleteclone = createtable.cloneNode(true);
+         createtable.style.display = 'flex';
+         createtableclone = document.querySelector('#tab_display').cloneNode(true);
+         createtable.style.display = 'none';
   });
 
 function addAttribute(fathercontainer, namevalue, typevalue, tuplevalue) {
@@ -495,13 +504,17 @@ function deletecreatetable(createtable) {
    if(containerfade) {
       containerfade.remove();
    }
-   createtable.style.display = 'none';
-   createtable.querySelectorAll('.add-button').forEach(element => {
-    element.style.display = 'flex';
-   })
-   createtable.querySelectorAll('.remove-button').forEach(element => {
-    element.style.display = 'flex';
-   })
+   actualcreatetable = document.querySelector('#create_table_container');
+   father = actualcreatetable.parentNode;
+   newelement = createtablecompleteclone.cloneNode(true);
+   father.replaceChild(newelement, actualcreatetable);
+   newelement.style.display = 'none';
+   document.querySelector('#createtablespace').style.display = 'none';
+   con = document.querySelector('.contentcontainer');
+   if(con) {
+       con.style.display = 'flex';
+   }
+   
 }
 
 function deletealloperators() {
@@ -535,27 +548,42 @@ function resizeconteinerscreatetable() {
 }
 
 function displaycreatetable(requisitiontype, clone) {
+    
     const maincontainer = document.querySelector('#create_table_container');
     maincontainer.style.display = 'flex';
+
+    const createtablespace = document.querySelector('#createtablespace');
+    createtablespace.style.display = 'flex';
+    const tabdisplayspace = document.querySelector('#tabdisplayspace');
+    tabdisplayspace.style.display = 'flex';
+
     if(clone) {
-      let tabdisplay = maincontainer.querySelector('#tab_display')
-      maincontainer.replaceChild(clone, tabdisplay)
+      maincontainer.style.display = 'flex';
+      let tabdisplay = maincontainer.querySelector('#tab_display');
+      maincontainer.replaceChild(clone, tabdisplay);
+      maincontainer.style.position = 'absolute';
+      maincontainer.style.left = '20%';
+      maincontainer.style.top = '20%';
     }
+
     if(requisitiontype == 1) {
+      document.querySelector('.contentcontainer').style.display = 'none';
     let numtabelas = 1;
     let tabcontainer = document.createElement('div');
     tabcontainer.className = 'tab_container';
     tabcontainer.style.display = 'flex';
-    tabcontainer.style.top = '6.85rem';
-    tabcontainer.style.left = '24rem';
     tabcontainer.style.height = 'fit-content';
-    tabcontainer.style.width = '70.15rem';
+    tabcontainer.style.width = '70rem';
+    tabcontainer.style.marginLeft = '2rem';
     tabcontainer.id = 'create_table_tab';
+    createtablespace.insertBefore(tabcontainer, tabdisplayspace);
 
     const containerfade = document.createElement('div');
     containerfade.className = 'containerfade_createtable';
-    document.body.appendChild(containerfade);
-
+    
+    tabdisplayspace.appendChild(containerfade);
+    tabdisplayspace.appendChild(maincontainer);
+    
     let tab = document.createElement('div');
     tab.textContent = `Tabela ${numtabelas}`;
     tab.style.display = 'flex';
@@ -607,7 +635,6 @@ function displaycreatetable(requisitiontype, clone) {
     };
      tabcontainer.appendChild(tab);
      tabcontainer.appendChild(addbutton);
-     document.querySelector('.maincontainer').appendChild(tabcontainer);
      createtabletablistener();
      resizeconteinerscreatetable();
     }
@@ -1212,6 +1239,7 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
   let titlearea = result.querySelector('.titlecontainer');
 
   let historic_consults = [];
+  let historic_results = []; // Certifique-se de que isso esteja definido no escopo adequado
 
   fetch('/consult', {
       method: 'POST',
@@ -1233,9 +1261,9 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
 
       let line_button_container = document.createElement('div');
       line_button_container.className = 'line_button_container';
-      let lastline;
+
       let all_lines_text = [];
-      
+      let all_line_results = []; // Novo array para armazenar todos os line_results
 
       for (let [index, line] of data.entries()) {
           let line_button = document.createElement('BUTTON');
@@ -1245,10 +1273,11 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
           line_button_container.appendChild(line_button);
           let buttonoriginalcolor = line_button.style.color;
           let [line_result, line_text] = resultlines(line, result, historicarea, userconsult, titlearea);
-          if (index == data.length - 1) {
-              lastline = line_result;
-          }
+
+          all_line_results.push(line_result); // Armazena cada line_result
+
           all_lines_text.push(line_text); 
+
           line_button.onclick = function() {
               Array.from(result.children).forEach(child => {
                   if (child && !child.classList.contains('titlecontainer')) {
@@ -1256,12 +1285,16 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
                   }
               });
               document.querySelectorAll('.line_button').forEach(element => {
-                element.style.backgroundColor = 'rgba(220, 220, 220, 1)';
-                element.style.color = buttonoriginalcolor;
-              })
+                  element.style.backgroundColor = 'rgba(220, 220, 220, 1)';
+                  element.style.color = buttonoriginalcolor;
+              });
               this.style.backgroundColor = 'rgb(105, 105, 105)';
               this.style.color = 'white';
               result.appendChild(line_result);
+              let table = line_result.querySelector('table');
+              if (table.scrollWidth < result.clientWidth) {
+                  line_result.style.alignItems = 'center';
+              }
           };
       }
 
@@ -1278,37 +1311,58 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
       erase_query_button.innerHTML = '<i class="fas fa-trash"></i>';
       erase_query_button.setAttribute('searchindex', historic_results.length);
 
-      historic_results.push([historic_results.length, lastline, line_button_container]);
+      // Armazena todas as linhas de resultado e o container dos botões das linhas
+      historic_results.push([historic_results.length, all_line_results, line_button_container]);
 
       search_query_button.onclick = function() {
-          historic_results.forEach(element => {
-              if (element[0] == parseInt(this.getAttribute('searchindex'))) {
-                  Array.from(result.children).forEach(child => {
-                      if (child && !child.classList.contains('titlecontainer')) {
-                          child.remove();
-                      }
-                  });
-                  result.appendChild(element[1]);
-                  title = titlearea.querySelector('.line_button_container');
-                  if(title) {
-                    title.remove();
+          let searchIndex = parseInt(this.getAttribute('searchindex'));
+          let elementToShow = historic_results.find(element => element[0] === searchIndex);
+
+          if (elementToShow) {
+              // Limpar resultados atuais
+              Array.from(result.children).forEach(child => {
+                  if (child && !child.classList.contains('titlecontainer')) {
+                      child.remove();
                   }
-                  titlearea.appendChild(element[2]);
+              });
+
+              // Adicionar todas as linhas de resultado
+              elementToShow[1].forEach(lineResult => {
+                  result.appendChild(lineResult);
+              });
+
+              // Atualizar os botões das linhas
+              let existingLineButtons = titlearea.querySelector('.line_button_container');
+              if (existingLineButtons) {
+                  existingLineButtons.remove();
               }
-          });
+              titlearea.appendChild(elementToShow[2]);
+          }
       };
 
       erase_query_button.onclick = function() {
           let searchIndex = parseInt(this.getAttribute('searchindex'));
           let elementToRemove = historic_results.find(element => element[0] === searchIndex);
-          if (result.contains(elementToRemove[1])) {
-              elementToRemove[1].remove();
+          
+          if (elementToRemove) {
+              // Remover cada linha de resultado
+              elementToRemove[1].forEach(lineResult => {
+                  if (result.contains(lineResult)) {
+                      lineResult.remove();
+                  }
+              });
+
+              // Remover o container dos botões das linhas
+              if (titlearea.contains(elementToRemove[2])) {
+                  elementToRemove[2].remove();
+              }
+
+              // Remover o item do histórico
+              historic_results = historic_results.filter(element => element[0] !== searchIndex);
+
+              // Remover o elemento do histórico visual
+              this.parentNode.parentNode.remove();
           }
-          if (titlearea.contains(elementToRemove[2])) {
-              elementToRemove[2].remove();
-          }
-          historic_results = historic_results.filter(element => element[0] !== searchIndex);
-          this.parentNode.parentNode.remove();
       };
 
       const historic_buttons_container = document.createElement('div');
@@ -1339,7 +1393,6 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
       const resulttab = document.querySelector('.tab_container').querySelector('#results');
       resulttab.click();
 
-
       let verticaloverflow = false;
       for (let index = 0; index < all_lines_text.length; index++) {
           const line_text = all_lines_text[index];
@@ -1360,7 +1413,7 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
               child.remove();
           }
       });
- 
+
       historicarea.appendChild(text_query_historic_container);
 
       historic_consults.forEach(element => {
@@ -1370,34 +1423,29 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
       titlearea.appendChild(line_button_container);
       search_query_button.click();
 
-      text_query_historic_container.querySelectorAll('.container_case_overflow').forEach((element, index) => {
-        child = element.children[0];
-        if(verticaloverflow) {
+      if (verticaloverflow) {
           const verticalelipses = document.createElement('div');
           verticalelipses.className = 'vertical_elipses';
           verticalelipses.textContent = '⋮';
           text_query_historic_container.appendChild(verticalelipses);
-          verticaloverflow = false;
-        }
+      }
 
-        text_query_historic_container.appendChild(historic_buttons_container);
-      });
+      text_query_historic_container.appendChild(historic_buttons_container);
       
-      finalbutton = line_button_container.lastElementChild;
-      finalbutton.classList.add('pulse');
-      setTimeout(() => {
-        finalbutton.classList.remove('pulse');
-        finalbutton.click();
-      }, 1500);
+      // Seleciona o último botão de linha e clica nele
+      let finalbutton = line_button_container.lastElementChild;
+      finalbutton.click();
+
       document.querySelectorAll('.text_query_historic_container').forEach((scrollContainer) => {
-        scrollContainer.addEventListener('scroll', function() {
-          adjustHeaderAndButtons(scrollContainer);
-        });
+          scrollContainer.addEventListener('scroll', function() {
+              adjustHeaderAndButtons(scrollContainer);
+          });
       });
   }).catch(error => {
-      alert(error.message)
+      alert(error.message);
   });
 });
+
 
 function adjustHeaderAndButtons(scrollContainer) {
   // Seleciona os containers relacionados ao contêiner de rolagem atual
@@ -1502,9 +1550,34 @@ function printdbtables(data, requisition) {
               table_extension_button.textContent = '↗';
               
               table_extension_button.onclick = function() {
-                  if(table_container_complete) {
+                if (table_container_complete) {
+                    table_container_complete.style.height = '';
+                    table_container_complete.style.width = '';
+                    table_container_complete.style.maxWidth = '';
+                    table_container_complete.style.maxHeight = '';
+                    table_container_complete.style.backgroundColor = '';
+                    table_container_complete.style.border = '';
+                    table_container_complete.style.paddingRight = '';
+                    table_container_complete.style.justifyContent = '';
+            
+             
+                    let table_name = table_container_complete.querySelector('.table_name');
+                    if (table_name) {
+                        table_name.style.fontSize = ''; 
+                        table_name.style.color = '';    
+                        table_name.style.backgroundColor = ''; 
+                        table_name.style.padding = '';  
+                        table_name.style.margin = '';   
+                    }
+            
+                   
+                    table_container_complete.querySelectorAll('.show_at_delete_tuple').forEach(child => {
+                        child.style.display = 'none';
+                    });
+            
                     let popup = document.createElement('div');
                     popup.classList.add('complete_table');
+                    
                     table_container_complete.style.height = 'fit-content';
                     table_container_complete.style.width = 'fit-content';
                     table_container_complete.style.maxWidth = 'none';
@@ -1514,39 +1587,39 @@ function printdbtables(data, requisition) {
                     table_container_complete.style.paddingRight = '0px';
                     table_container_complete.style.justifyContent = 'flex-start';
                     let itens_to_remove = table_container_complete.querySelector('.table_extension_container');
-                    if(itens_to_remove) {
-                      itens_to_remove.remove();
+                    if (itens_to_remove) {
+                        itens_to_remove.remove();
                     }
                     table_container_complete.querySelectorAll('*').forEach(child => {
-                      child.style.opacity = '1'    
-                    })
-                    let circle = table_container_complete.querySelector('.loader_circle')
-                    if(circle) {
-                      circle.remove()
+                        child.style.opacity = '1';
+                    });
+                    let circle = table_container_complete.querySelector('.loader_circle');
+                    if (circle) {
+                        circle.remove();
                     }
                     let close_button = document.createElement('div');
                     close_button.textContent = 'X';
                     close_button.classList.add('close_button');
                     close_button.onclick = function() {
                         document.body.removeChild(this.parentNode.parentNode);
-                    }
-                    
+                    };
+            
                     let topbar = document.createElement('div');
                     topbar.classList.add('topbarextension');
                     topbar.appendChild(close_button);
                     popup.appendChild(topbar);
                     popup.appendChild(table_container_complete);
                     document.body.appendChild(popup);
-                    
+            
                     table_container_complete.onscroll = function() {
                         var scrollLeft = table_container_complete.scrollLeft;
                         close_button.style.transform = 'translateX(' + scrollLeft + 'px)';
-                    }
-                  }else {
-                    alert('A tabela toda já está sendo mostrada')
-                  }
-                 
-              }
+                    };
+                } else {
+                    alert('A tabela toda já está sendo mostrada');
+                }
+            };
+            
               
               let table_insert_button = document.createElement('BUTTON');
               table_insert_button.className = 'table_extension_button';
@@ -1566,6 +1639,9 @@ function printdbtables(data, requisition) {
                   }).then(data => {
                       displaycreatetable(2, createtableclone.cloneNode(true));
                       let container = document.querySelector('#tab_display');
+                      container.style.backgroundColor = 'white';
+                      container.marginRight = '5.2rem';
+                      container.marginBottom = '3rem';
                       container.parentNode.style.border = '0.1rem solid grey';
                       container.setAttribute('tablename', tablename);
                       let attributes = data.attributes;
@@ -1632,9 +1708,7 @@ function printdbtables(data, requisition) {
                          container.remove()
                      }
                 })
-
               }
-
               let table_update_button = document.createElement('BUTTON');
               table_update_button.className = 'table_extension_button';
               table_update_button.title = 'Atualizar tabela';
@@ -1925,10 +1999,12 @@ function printdbtables(data, requisition) {
       }
       
 function sendbdtocreate(route) {
+    
         let db = {};
         const loadercircle = document.createElement('div');
         loadercircle.className = 'create_db_loadercircle';
         if(`${route}` != 'deletetuple') {
+        
             let count = 1;
             let tables = document.querySelectorAll('#tab_display');
             const container = tables[0].parentNode.querySelector('.buttons_container_for_table_container');
@@ -1953,6 +2029,10 @@ function sendbdtocreate(route) {
                       }
                       types.push(type.value);
                   });
+
+                  if(tablename == '') {
+                    throw new Error(`A tabela: ${table.getAttribute('tabnumber')} precisa de um nome!`);
+                  }
           
                   let tupleDOM = table.querySelectorAll('.tuple_input');
                   tupleDOM.forEach(tuple => {
@@ -1969,13 +2049,16 @@ function sendbdtocreate(route) {
                       });
                       tuples.push(array);
                   });
+                 
                   db[count] = {
                       tablename: tablename,
                       attributes: attributes,
                       types: types,
                       tuples: tuples
                   };
+               
                   count = count + 1;
+                  
               });
           } catch (e) {
               return alert(e.message);
@@ -2000,7 +2083,10 @@ function sendbdtocreate(route) {
               if(['insert', 'update'].includes(`${route}`)) {
                 printdbtables(db, `${route}`)
               }else {
-                document.querySelector('.create_db_loadercircle').remove();
+                l = document.querySelector('.create_db_loadercircle');
+                if(l) {
+                   l.remove();
+                }
                 initializesystem(db)
               }
             }).catch(error => {
