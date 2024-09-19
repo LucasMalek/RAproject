@@ -214,7 +214,7 @@ h2 {
   overflow-wrap: break-word;
   box-sizing: border-box;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .keyboard {
@@ -746,9 +746,6 @@ h2 {
   height: 47.8rem;
   display: flex;
   width: 2rem;
-  left: 3.8rem;
-  top: 7.7rem;
-  position: absolute;
   background-color: #431c6d;
   box-shadow: 
     inset -3px 0px 5px rgba(0, 0, 0, 0.2),  

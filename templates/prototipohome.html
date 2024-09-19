@@ -184,49 +184,70 @@ form.addEventListener('submit', function(event) {
 function initializesystem(db) {
       const replacementContainer = document.createElement('div');
       replacementContainer.setAttribute('class', 'consultcontainer');
+      replacementContainer.style.display = 'flex';
+      replacementContainer.style.flexDirection = 'row'; 
+      replacementContainer.style.justifyContent = 'flex-start'; 
+  
       const contentContainer = document.querySelector('.contentcontainer');
       const containerborder = document.querySelector('.maincontentborder');
-      
+  
       const consult_environment = document.querySelector('.consult_environment');
       const bd_area = document.querySelector('#bd');
-      const resultcontainer = document.querySelector('.resultcontainer')
-
+      const resultcontainer = document.querySelector('.resultcontainer');
+  
       contentContainer.classList.add('content-fading-out');
-            contentContainer.addEventListener('transitionend', () => {
-            containerborder.removeChild(contentContainer);
-            bd_area.style.display = 'flex';
-            Array.from(bd_area.children).forEach(element => {
+      contentContainer.addEventListener('transitionend', () => {
+          containerborder.removeChild(contentContainer);
+  
+          bd_area.style.display = 'flex';
+          Array.from(bd_area.children).forEach(element => {
               element.style.display = 'flex';
-            })
-            consult_environment.style.display = 'flex';
-            Array.from(consult_environment.children).forEach(element => {
-            element.style.display = 'flex';
-            })
-            replacementContainer.appendChild(bd_area)
-            replacementContainer.appendChild(consult_environment)
-            containerborder.appendChild(replacementContainer);
-            replacementContainer.classList.add('content-fading-in')
-            containerborder.style.backgroundColor = 'white';
-            containerborder.style.opacity = '95%';
-            printdbtables(db, 'alltables')
-            let tab = document.querySelector('.tab_container')
-            tab.style.display = 'flex'
-            tab.style.height = '3.6rem';
-            tab.style.top = '1.6rem';
-            Array.from(tab.children).forEach(element => {
+          });
+  
+          consult_environment.style.display = 'flex';
+          Array.from(consult_environment.children).forEach(element => {
               element.style.display = 'flex';
-            })
-            containerborder.style.borderTopLeftRadius = '0';
-            containerborder.appendChild(resultcontainer);
-            tablistener()
-            const containerfade = document.createElement('div');
-            containerfade.className = 'containerfade_maininterface';
-            document.querySelector('.maincontainer').appendChild(containerfade);
-            });
-            change_db_listener();
+          });
+  
+          const containerfade = document.createElement('div');
+          containerfade.className = 'containerfade_maininterface';
+          containerfade.style.display = 'flex';
+          containerfade.style.flexDirection = 'column';
+          containerfade.style.justifyContent = 'center';
+          containerfade.style.alignItems = 'center';
+          containerfade.style.width = '2rem'; 
+          containerfade.style.backgroundColor = '#431c6d';
+          containerfade.style.height = '47.8rem'; 
+          containerfade.style.marginLeft = '-2.1rem';
           
-    }
-
+          replacementContainer.appendChild(containerfade); 
+          replacementContainer.appendChild(bd_area); 
+          replacementContainer.appendChild(consult_environment); 
+  
+          containerborder.appendChild(replacementContainer);
+  
+          replacementContainer.classList.add('content-fading-in');
+          containerborder.style.backgroundColor = 'white';
+          containerborder.style.opacity = '95%';
+  
+          // Inicializa as tabelas e resultados
+          printdbtables(db, 'alltables');
+          let tab = document.querySelector('.tab_container');
+          tab.style.display = 'flex';
+          tab.style.height = '3.6rem';
+          tab.style.top = '1.6rem';
+          Array.from(tab.children).forEach(element => {
+              element.style.display = 'flex';
+          });
+  
+          containerborder.style.borderTopLeftRadius = '0';
+          containerborder.appendChild(resultcontainer);
+          tablistener();
+      });
+  
+      change_db_listener();
+  }
+  
 function change_db_listener() {
       const inputElement = document.getElementById('change_db_input');
       
@@ -251,44 +272,57 @@ function handleChangeDB(event) {
             
             let formData = new FormData();
             formData.append('file', file);
+            
+            // Limpar tabelas antigas
             db_container.querySelectorAll('.table_container').forEach(old_table => {
-              old_table.remove();
+                old_table.remove();
             });
+
+            // Adicionar loadercircle
             db_container.appendChild(loadercircle);
+
             fetch('/loadfile', {
                 method: 'POST',
                 body: formData
-            }).then(response => {
+            })
+            .then(response => {
                 if (!response.ok) {
                     throw new Error('Erro na requisição');
                 } else {
                     return response.json();
                 }
-            }).then(db => {
-                
+            })
+            .then(db => {
+                // Renderizar as novas tabelas
                 printdbtables(db, 'alltables');
-                
+
+                // Tornar as novas tabelas invisíveis até a animação terminar
                 db_container.querySelectorAll('.table_container').forEach(newtables => {
                     newtables.style.opacity = 0;
                 });
 
-                setTimeout(() => {
+                // Usar requestIdleCallback para remover o loader quando o navegador estiver pronto
+                requestIdleCallback(() => {
                     db_container.querySelectorAll('.table_container').forEach(newtables => {
-                        newtables.style.opacity = 1;
+                        newtables.style.opacity = 1; // Tornar as tabelas visíveis
                     });
-                }, 100);
-                loadercircle.remove(); 
-                event.target.value = ''; 
-            }).catch(error => {
+
+                    loadercircle.remove();  // Remover loadercircle após a renderização
+                });
+                
+                event.target.value = ''; // Resetar o input
+            })
+            .catch(error => {
                 console.error('Erro ao carregar o arquivo:', error);
-                event.target.value = ''; 
+                event.target.value = ''; // Resetar o input
             });
         } else {
             alert('Por favor, selecione um arquivo com a extensão .db');
-            event.target.value = ''; 
+            event.target.value = ''; // Resetar o input
         }
     }
 }
+
 
     let last_tab = "consult";
     let last_tab_create_table = 1;
@@ -1996,6 +2030,7 @@ function printdbtables(data, requisition) {
               }
           }
           return 'ok';
+         
       }
       
 function sendbdtocreate(route) {

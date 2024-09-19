@@ -371,8 +371,6 @@ def loadfile(file=None):
         relations_details_structure = []
         
         if file is None:
-            if 'file' not in request.files:
-                return jsonify({'erro': 'Nenhum arquivo foi enviado!'}), 400
             file = request.files['file']
         
         bd_name = f"{str(session['session_init'])}.db"
@@ -403,7 +401,11 @@ def loadfile(file=None):
             return jsonify([tuples, relations_details_structure])
         except Exception as e:
             return jsonify({'erro': str(e)}), 500
-
+    else:
+        logout()
+        return loadfile(request.files['file'])
+        
+        
 @app.route('/prototipo', methods=['GET'])
 def prototipo():
     return render_template('prototipohome.html')
@@ -482,7 +484,7 @@ def createdbfile(db=None):
     if 'session_init' not in session:
         session['session_init'] = count
         session['page_visited'] = True 
-
+    
     relations_details_structure = []
     
     try:
