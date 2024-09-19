@@ -132,17 +132,19 @@
   <script>
     const form = document.querySelector('.userchoicecontainer');
 
-document.getElementById('fileInput').addEventListener('change', function(event) {
-        const file = event.target.files[0];
-        if (file) {
-            const fileName = file.name.toLowerCase();
-            if (fileName.endsWith('.db')) {
-                form.dispatchEvent(new Event('submit'));
-            } else {
-                alert('Por favor, selecione um arquivo com a extensão .db');
-            }
-        }
-    });
+    document.getElementById('fileInput').addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (file) {
+          const fileName = file.name.toLowerCase();
+          if (fileName.endsWith('.db')) {
+              form.dispatchEvent(new Event('submit'));
+          } else {
+              alert('Por favor, selecione um arquivo com a extensão .db');
+              // Resetar o fileInput se o arquivo não for correto
+              document.getElementById('fileInput').value = null;
+          }
+      }
+  });
 
 form.addEventListener('submit', function(event) {
         event.preventDefault();
@@ -269,16 +271,14 @@ function handleChangeDB(event) {
             loadercircle.style.position = 'absolute';
             loadercircle.style.top = '17rem';
             loadercircle.style.left = '15rem';
-            
+
             let formData = new FormData();
             formData.append('file', file);
-            
-            // Limpar tabelas antigas
+
             db_container.querySelectorAll('.table_container').forEach(old_table => {
                 old_table.remove();
             });
 
-            // Adicionar loadercircle
             db_container.appendChild(loadercircle);
 
             fetch('/loadfile', {
@@ -293,36 +293,32 @@ function handleChangeDB(event) {
                 }
             })
             .then(db => {
-                // Renderizar as novas tabelas
                 printdbtables(db, 'alltables');
 
-                // Tornar as novas tabelas invisíveis até a animação terminar
                 db_container.querySelectorAll('.table_container').forEach(newtables => {
                     newtables.style.opacity = 0;
                 });
 
-                // Usar requestIdleCallback para remover o loader quando o navegador estiver pronto
-                requestIdleCallback(() => {
+                setTimeout(() => {
                     db_container.querySelectorAll('.table_container').forEach(newtables => {
-                        newtables.style.opacity = 1; // Tornar as tabelas visíveis
+                        newtables.style.opacity = 1;
                     });
+                    loadercircle.remove();
+                }, 100);
 
-                    loadercircle.remove();  // Remover loadercircle após a renderização
-                });
-                
-                event.target.value = ''; // Resetar o input
+                // Resetar o input de arquivo para permitir o envio do mesmo arquivo
+                document.getElementById('fileInput').value = null;
             })
             .catch(error => {
                 console.error('Erro ao carregar o arquivo:', error);
-                event.target.value = ''; // Resetar o input
+                document.getElementById('fileInput').value = null; // Resetar o input em caso de erro também
             });
         } else {
             alert('Por favor, selecione um arquivo com a extensão .db');
-            event.target.value = ''; // Resetar o input
+            document.getElementById('fileInput').value = null; // Resetar o input se o arquivo não for correto
         }
     }
 }
-
 
     let last_tab = "consult";
     let last_tab_create_table = 1;
