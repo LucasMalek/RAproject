@@ -45,6 +45,7 @@ instances: Dict[int, ralib.RA] = {}
 requisition_queue = queue.Queue()
 result_queue = queue.Queue()
 
+import re
 
 def reform_list(string, requisition):
     padrao_relations_tuples = r'[^\s]*(?=\()'
@@ -52,69 +53,192 @@ def reform_list(string, requisition):
     relations_tuples = []
     relation_label = []
     indice = 0
-    
+
     while indice < len(string):
         match_encontrado = False
         match = re.search(padrao_relations_label, string[indice:])
         if match:
             identified = match.group()
             if requisition != 'list':
-               if requisition in identified:
+                if requisition in identified:
                     relation_label.append(identified)
                     break
-               else: 
-                indice += match.end()
-                match_encontrado = True
+                else: 
+                    indice += match.end()
+                    match_encontrado = True
             else:
                 relation_label.append(identified)
                 indice += match.end()
                 match_encontrado = True
         if not match_encontrado:
             break
-        
+
     for i in relation_label:
-            requisition_queue.put(
-                [re.search(padrao_relations_tuples, i).group()+';', session['session_init'], 2])
-            relations_tuples.append(result_queue.get())
-            
-    for i, item in enumerate(relations_tuples):
+        requisition_queue.put(
+            [re.search(padrao_relations_tuples, i).group() + ';', session['session_init'], 2])
+        result = result_queue.get()
+        relations_tuples.append(result)
+
+    for idx, item in enumerate(relations_tuples):
+     
         lines = item.strip().splitlines()
-        padrao = re.compile(r'^\s*[^,]+(?:,\s*[^,]+)*\s*$')
         tuplas = []
+
+        # Extrair labels da primeira linha
+        labels_match = re.search(r'\((.*?)\)', lines[0])
+        if labels_match:
+            labels = labels_match.group(1).split(', ')
+
+        num_labels = len(labels)
+
         for line in lines[1:]:
-            if not line.startswith('-') and 'tuple returned' not in line:
-                if padrao.match(line):
-                    parts = [part.strip() for part in line.split(',')]
-                    tupla = tuple(parts)
-                    tuplas.append(tupla)
-        relations_tuples[i] = tuplas
-    
+            line = line.strip()
+            if line and not line.startswith('-') and not re.match(r'^\d+ tuple(s)? returned', line):
+                # Dividir a linha por vírgulas
+                fields = line.split(',')
+
+                # Remover espaços em branco
+                fields = [field.strip() for field in fields]
+
+                # Se o número de campos for igual ao número de labels, adicionar diretamente
+                if len(fields) == num_labels:
+                    tuplas.append(tuple(fields))
+                else:
+                    # Combinar campos para corresponder ao número de labels
+                    combined_fields = []
+                    start = 0
+                    end = len(fields)
+                    expected_fields = num_labels
+
+                    # Supõe que os primeiros e últimos campos são confiáveis
+                    # Calcula quantos campos estão no meio
+                    middle_fields_count = len(fields) - expected_fields + 1
+
+                    # Campos iniciais (antes dos campos problemáticos)
+                    combined_fields.extend(fields[:start + 5])
+
+                    # Combinar os campos problemáticos no meio
+                    combined_field = ','.join(fields[start + 5:end - (expected_fields - (start + 6))])
+                    combined_fields.append(combined_field)
+
+                    # Campos finais (após os campos problemáticos)
+                    combined_fields.extend(fields[-(expected_fields - (start + 6)):])
+
+                    # Verifica se o número de campos combinados corresponde ao número de labels
+                    if len(combined_fields) == num_labels:
+                        tuplas.append(tuple(combined_fields))
+                    else:
+                        # Se ainda não corresponder, registrar um erro ou lidar conforme necessário
+                        print(f"Erro ao processar linha: {line}")
+                        continue
+
+        relations_tuples[idx] = tuplas
+
     return relation_label, relations_tuples
 
+import re
+from datetime import datetime
+from itertools import combinations
 
 def reform_consult(string):
     pattern_labels = re.compile(r'\((.*?)\)')
-    pattern_tuples = re.compile(r'^\s*([^\-].*?)\s*$', re.MULTILINE)
-    
-    labels = []
-    tuples = []
-    
-    reformed_result = []
-
     match_labels = re.search(pattern_labels, string)
     if match_labels:
-        labels = match_labels.group(1).split(', ')
+        labels_raw = match_labels.group(1).split(',')
+        labels = []
+        types = []
+        for label in labels_raw:
+            label = label.strip()
+            if ':' in label:
+                name, type_ = label.split(':')
+                labels.append(name.strip())
+                types.append(type_.strip())
+            else:
+                labels.append(label)
+                types.append('string')  
         index = match_labels.end()
-        
-    match_tuples = re.findall(pattern_tuples, string[index:])
-    for match in match_tuples:
-        line = match.strip()
-        if line and not line.startswith('-') and not re.match(r'^\d+ tuple(s)? returned', line):
-            tuples.append(line.split(', '))
+    else:
+        return None
+
+    num_labels = len(labels)
+    # Obter as linhas de dados
+    data_string = string[index:].strip()
+    lines = data_string.splitlines()
+    tuples = []
+    for line_number, line in enumerate(lines, start=1):
+        line = line.strip()
     
+        if not line or line.startswith('-') or re.match(r'^\d+ tuple(s)? returned', line):
+          
+            continue
+        fields = [field.strip() for field in line.split(',')]
+        total_fields = len(fields)
+     
+        if total_fields == num_labels:
+         
+            tuples.append(fields)
+        else:
+         
+            # Tentar ajustar campos
+            adjusted_fields = adjust_fields(fields, types)
+            if adjusted_fields:
+               
+                tuples.append(adjusted_fields)
+   
     reformed_result = labels, tuples
-    
     return reformed_result
+
+def adjust_fields(fields, types):
+    from itertools import combinations
+    num_labels = len(types)
+    total_fields = len(fields)
+    if total_fields == num_labels:
+        return fields
+    elif total_fields < num_labels:
+        return None  
+    else:
+        num_fields_to_merge = total_fields - num_labels
+        indices = list(range(1, total_fields))
+        for merge_indices in combinations(indices, num_fields_to_merge):
+            merge_indices = set(merge_indices)
+            adjusted_fields = []
+            i = 0
+            while i < total_fields:
+                field = fields[i]
+                while i+1 < total_fields and (i+1) in merge_indices:
+                    field += ',' + fields[i+1]
+                    i += 1
+                adjusted_fields.append(field)
+                i += 1
+            if len(adjusted_fields) != num_labels:
+                continue
+            match = True
+            for idx, (value, expected_type) in enumerate(zip(adjusted_fields, types)):
+                if not is_type(value, expected_type):
+                    match = False
+                    break
+            if match:
+                return adjusted_fields
+        return None
+
+def is_type(value, expected_type):
+    if expected_type == 'number':
+        try:
+            float(value)
+            return True
+        except ValueError:
+            return False
+    elif expected_type == 'date':
+        try:
+            datetime.strptime(value, '%Y-%m-%d')
+            return True
+        except ValueError:
+            return False
+    elif expected_type == 'string':
+        return True  
+    else:
+        return True 
+
 
 
 def process_db_tasks():
@@ -244,14 +368,15 @@ def CreateConsultfromOperators(operators, assigments = None):
         '\u03C0': 'project_',
         '\u03C1': 'rename_',  
     }
+    
     binary = {
         '\u222A': 'union',
         '\u2212': 'diff',
         '\u2229': 'intersect',
         '\u2715': 'cross',
         '\u2190': 'assigment',
-        '⋈': 'join',
-        '⋈θ': 'join_'
+        '*': 'join',
+        '⋈': 'join_'
     }
 
     def operatorsthread(operators_clone, index):
@@ -359,6 +484,7 @@ async def consult():
             print(e)
             return make_response(jsonify({'error': 'Ocorreu um erro durante a consulta'}), 500)
     else:
+         print(session)
          return make_response(jsonify({'error': 'Você precisa definir o banco de dados primeiro!'}), 400)
 
 

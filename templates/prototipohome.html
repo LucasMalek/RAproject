@@ -97,8 +97,8 @@
           <button onclick='operator_impression("\u2212")'>-</button>
           <button onclick='operator_impression("\u2229")'>∩</button>
           <button onclick='operator_impression("\u2715")'>×</button>
-          <button onclick='operator_impression("⋈")'>⋈</button>
-          <button onclick='operator_impression("⋈θ")'>⋈θ</button>
+          <button onclick='operator_impression("*")'>*</button>
+          <button onclick='operator_impression("⋈")'>⋈<sub>θ</sub></button>
           <button onclick='operator_impression("\u00F7")'>÷</button>
       </div>
       <form method="post" id="consult_form">
@@ -132,7 +132,7 @@
   <script>
     const form = document.querySelector('.userchoicecontainer');
 
-    document.getElementById('fileInput').addEventListener('change', function(event) {
+document.getElementById('fileInput').addEventListener('change', function(event) {
       const file = event.target.files[0];
       if (file) {
           const fileName = file.name.toLowerCase();
@@ -140,7 +140,6 @@
               form.dispatchEvent(new Event('submit'));
           } else {
               alert('Por favor, selecione um arquivo com a extensão .db');
-              // Resetar o fileInput se o arquivo não for correto
               document.getElementById('fileInput').value = null;
           }
       }
@@ -1006,7 +1005,7 @@ function createOperatorContainer(operator, line, position) {
             variable.classList.add('variable');
             variable.setAttribute('placeholder', 'Nome da variável');
           }
-          if(operator == "⋈θ") {
+          if(operator == "⋈") {
             operatorElement.textContent = "⋈"
             operatorElement.style.marginLeft = '0.1rem';
             operatorElement.style.marginRight = '0.1rem';
@@ -1153,11 +1152,11 @@ function addOperatorInfo() {
       "×": "Este é o operador 'Produto cartesiano'. R × M retorna uma instância de relação cujo esquema contém todos os campos de R (na mesma ordem em que eles aparecem em R) seguidos de todos os campos de M (na mesma ordem em que eles aparecem em M). O resultado de R X M contém uma tupla <r, s> (a concatenação das tuplas r e s) para cada par de tuplas r ∈ R, s ∈ M."
        + "\n\n Formato da operação: Relação1 × Relação2\n\nExemplo de uso: Pessoa × Cliente.",
            
-      "⋈": "Este é o operador 'Equijunção'. R ⋈	M é quando a condição de junção consiste apenas em igualdades (ligadas por ∧) no formato R.nome1 = M.nome2, ou seja, igualdades entre os dois campos em R e M.\n\n" +
+      "*": "Este é o operador 'Junção Natural'. A junção natural igualará automaticamente todos os pares de atributos com nomes idênticos a partir das tabelas, e a tabela resultante terá apenas um atributo de cada par.\n\n" +
             "Formato da operação: Relação1 ⋈ Relação2N\nExemplo de uso: Pessoa ⋈ Cliente.",
 
-      "⋈θ": "Este é o operador 'Junção natural'. R ⋈θ	M é uma eqüijunção na qual as igualdades são especificadas para todos os campos que têm os mesmos nomes em R e M. .\n\n" +
-            "Formato da operação: Relação1 ⋈θ Condição (Relação2)\n\nExemplo de uso: Pessoa ⋈θ {Pessoa.nome = Cliente.nome} Cliente.\n\n" +
+      "⋈": "Este é o operador 'Junção Theta'. A Junção Theta Ela cria uma relação pela combinação dos campos de uma relação com aquelas de uma outra baseada em uma comparação de valores entre colunas que não necessariamente tem o mesmo nome.\n\n" +
+            "Formato da operação: Relação1 ⋈ {Condição} (Relação2)\n\nExemplo de uso: Pessoa ⋈ {Pessoa.nome = Cliente.nome} Cliente.\n\n" +
             "Formato de condições aceitas: {Relação1.atributo1 = Relação2.atributo2}",
 
       "÷": "Considere duas instâncias de rela- ção A e B, na qual A tem (exatamente) dois campos x e y, e B tem apenas um campo y, com o mesmo domínio que A. Definimos a operação divisão A/B como o conjunto de todos os valores x (no formato de tuplas unárias) tais que, para todo valor y em (uma tupla de) B, há uma tupla <x,y> em A."+
@@ -1269,7 +1268,7 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
   let titlearea = result.querySelector('.titlecontainer');
 
   let historic_consults = [];
-  let historic_results = []; // Certifique-se de que isso esteja definido no escopo adequado
+  let historic_results = []; 
 
   fetch('/consult', {
       method: 'POST',
@@ -1293,7 +1292,7 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
       line_button_container.className = 'line_button_container';
 
       let all_lines_text = [];
-      let all_line_results = []; // Novo array para armazenar todos os line_results
+      let all_line_results = []; 
 
       for (let [index, line] of data.entries()) {
           let line_button = document.createElement('BUTTON');
@@ -1304,7 +1303,7 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
           let buttonoriginalcolor = line_button.style.color;
           let [line_result, line_text] = resultlines(line, result, historicarea, userconsult, titlearea);
 
-          all_line_results.push(line_result); // Armazena cada line_result
+          all_line_results.push(line_result); 
 
           all_lines_text.push(line_text); 
 
@@ -1341,7 +1340,7 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
       erase_query_button.innerHTML = '<i class="fas fa-trash"></i>';
       erase_query_button.setAttribute('searchindex', historic_results.length);
 
-      // Armazena todas as linhas de resultado e o container dos botões das linhas
+     
       historic_results.push([historic_results.length, all_line_results, line_button_container]);
 
       search_query_button.onclick = function() {
@@ -1349,24 +1348,19 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
           let elementToShow = historic_results.find(element => element[0] === searchIndex);
 
           if (elementToShow) {
-              // Limpar resultados atuais
+         
               Array.from(result.children).forEach(child => {
                   if (child && !child.classList.contains('titlecontainer')) {
                       child.remove();
                   }
               });
-
-              // Adicionar todas as linhas de resultado
-              elementToShow[1].forEach(lineResult => {
-                  result.appendChild(lineResult);
-              });
-
-              // Atualizar os botões das linhas
+              
               let existingLineButtons = titlearea.querySelector('.line_button_container');
               if (existingLineButtons) {
                   existingLineButtons.remove();
               }
               titlearea.appendChild(elementToShow[2]);
+              elementToShow[2].lastElementChild.click();
           }
       };
 
@@ -1375,22 +1369,19 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
           let elementToRemove = historic_results.find(element => element[0] === searchIndex);
           
           if (elementToRemove) {
-              // Remover cada linha de resultado
               elementToRemove[1].forEach(lineResult => {
                   if (result.contains(lineResult)) {
                       lineResult.remove();
                   }
               });
 
-              // Remover o container dos botões das linhas
               if (titlearea.contains(elementToRemove[2])) {
                   elementToRemove[2].remove();
               }
 
-              // Remover o item do histórico
               historic_results = historic_results.filter(element => element[0] !== searchIndex);
 
-              // Remover o elemento do histórico visual
+
               this.parentNode.parentNode.remove();
           }
       };
@@ -1461,8 +1452,7 @@ document.getElementById('consult_form').addEventListener('submit', function(e) {
       }
 
       text_query_historic_container.appendChild(historic_buttons_container);
-      
-      // Seleciona o último botão de linha e clica nele
+
       let finalbutton = line_button_container.lastElementChild;
       finalbutton.click();
 
@@ -2201,6 +2191,27 @@ function tablenamelistener() {
 window.addEventListener('beforeunload', function (e) {
   navigator.sendBeacon('/logout'); 
 });
+
+document.addEventListener('input', function(event) {
+  if (event.target.classList.contains('input-atributes')) {
+    if(event.target.clientWidth < event.target.scrollWidth) {
+      adjustInputWidth(event.target, 5);
+    }  
+  }
+});
+
+document.addEventListener('keydown', function(event) {
+  if (event.target.classList.contains('input-atributes')) {
+      if (event.key === 'Backspace') { 
+          const remInPixels = parseFloat(getComputedStyle(document.documentElement).fontSize);
+          const minWidthInPixels = 5 * remInPixels;
+          if(event.target.clientWidth > minWidthInPixels) {
+              adjustInputWidth(event.target, -5);
+          }
+      }
+  }
+});
+
 </script>
 </body>
 </html>
