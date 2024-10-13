@@ -239,8 +239,6 @@ def is_type(value, expected_type):
     else:
         return True 
 
-
-
 def process_db_tasks():
     while True:
         try:

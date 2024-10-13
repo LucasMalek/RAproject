@@ -108,9 +108,9 @@ class RA:
                 attribute_start = mensagem_erro.find("in") + 3
                 attribute_end = mensagem_erro.find(":", attribute_start)
                 attribute_name = mensagem_erro[attribute_start:attribute_end].strip()
-                return f"Erro: Referência de atributo inexistente: '{attribute_name}'."
+                return f"Erro: Referência de atributo: '{attribute_name}'. Verifique se o nome e o valor estão corretos"
             elif "extraneous input" in mensagem_erro:
-                return "Erro: Condição incompleta ou incorreta na consulta."
+                return "Erro: Condição incompleta na consulta."
             elif "mismatched input" in mensagem_erro:
                 input_start = mensagem_erro.find("input '") + 7
                 input_end = mensagem_erro.find("'", input_start)

@@ -232,7 +232,7 @@ h2 {
   height: 80%; 
   width: 5%; 
   background-color: transparent; 
-  font-size: large;
+  font-size:  xx-large;
   cursor: pointer;
   border: none; 
   color: #2d025b;
@@ -539,7 +539,7 @@ h2 {
 
 .consult_observation {
   font-size: 0.8rem;
-  color: rgba(183, 181, 191, 1); /* Leve contraste com o fundo */
+  color: black; /* Leve contraste com o fundo */
   text-align: left; /* Texto à esquerda */
   width: 60%; /* Ajusta a largura para não ocupar todo o espaço */
   padding-left: 0.2rem;
@@ -954,7 +954,7 @@ h2 {
   width: fit-content;
   position: relative;
   height: 1rem;
-  margin-bottom: 0.2rem;
+  margin-bottom: 0.5rem;
 }
 
 
@@ -966,6 +966,7 @@ h2 {
   cursor: pointer;
   font-size: 1rem;
   color: white;
+  margin-bottom: 0.5rem;
 }
 
 .consultform_buttons_container > button:nth-of-type(2) {
@@ -1216,10 +1217,9 @@ td {
 
 .text_query {
   display: flex;
-  align-items: center; /* Ensures vertical alignment of all elements */
-  width: fit-content; /* Ensure it adjusts based on content */
+  align-items: center; 
+  width: fit-content; 
   white-space: nowrap; 
-  overflow: hidden;
   text-overflow: ellipsis;
 }
 
@@ -1229,7 +1229,7 @@ td {
   align-items: center; /* Center operator symbol vertically */
   justify-content: center;
   margin-right: 5px; /* Space between operator and attributes */
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.3rem;
 }
 
 .text_query_attributes {
@@ -1237,21 +1237,30 @@ td {
   display: flex; /* Change to flex to keep alignment consistent */
   align-items: center; /* Vertical alignment for attributes */
   margin-right: 5px;
+  margin-top: 0.3rem;
 }
 
 .text_query_relation {
   font-size: 1.2rem;
   display: flex;
   align-items: center;
-  margin-bottom: 0.3rem;
+  
 }
 
 .text_query_parentheses {
   font-size: 1.5rem;
   display: flex;
-  align-items: center; /* Center parentheses vertically */
-  margin-bottom: 0.6rem;
+  align-items: center; 
+ 
 }
+
+.text_query_operator,
+.text_query_attributes,
+.text_query_relation,
+.text_query_parentheses {
+  line-height: 1;
+}
+
 
 .consultform_buttons_container {
   width: 100%;
@@ -1554,3 +1563,131 @@ td {
   align-items: center;
   justify-content: center;
 }
+
+
+
+.hidden {
+  display: none !important;
+}
+
+
+#custom-alert-overlay {
+  position: fixed;
+  top: 2rem; 
+  left: 48%;
+  transform: translateX(-50%); 
+  width: auto;
+  z-index: 1000;
+  
+}
+
+
+#custom-alert {
+  color: white;
+  margin-top: 0.9rem;
+  padding: 1.25rem; 
+  border-top-left-radius: 0.5rem;
+  border-top-right-radius: 0.5rem;
+  text-align: center;
+  font-family: Arial, sans-serif;
+  box-sizing: border-box;
+  max-width: 90%; 
+  width: 30rem; 
+  word-wrap: break-word;
+  position: relative;
+  display: flex; 
+  flex-direction: column; 
+  justify-content: center; 
+  margin-left: 2rem;
+}
+
+
+#close-button {
+  position: absolute;
+  top: 0.5rem; 
+  right: 0.5rem;
+  background: none;
+  border: none;
+  color: white;
+  font-size: 1rem; 
+  cursor: pointer;
+}
+
+#progress-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 0.3125rem; 
+  background-color: rgba(255, 255, 255, 0.7);
+  animation: progress 3s linear forwards;
+  width: 100%;
+}
+
+
+@keyframes progress {
+  from { width: 100%; }
+  to { width: 0%; }
+}
+
+
+.success {
+  background-color: #4CAF50; 
+}
+
+
+.error {
+  background-color: #f44336; 
+}
+
+.tutorial-container {
+  background-color: #2d025b;
+  padding-top: 0.5rem;
+  width: 100%;
+  height: fit-content;
+  justify-content: center;
+}
+
+.tutorial-title {
+  text-align: left; 
+  font-size: 2rem;
+  color: #CBCACE;
+  font-family: 'Co Headline', sans-serif;
+  margin-bottom: 2rem;
+  padding-left: 47.5rem; 
+}
+
+.tutorial-section {
+  margin-bottom: 1.5rem;
+  background-color: rgba(0, 0, 0, 0.5); 
+  padding: 1rem;
+  border-radius: 5px;
+}
+
+.tutorial-section-title {
+  font-size: 1.5rem;
+  color: #CBCACE; 
+  margin-bottom: 0.5rem;
+}
+
+.tutorial-text {
+  font-size: 1rem;
+  color: #CBCACE; 
+  line-height: 1.6;
+}
+
+.maincontainer {
+  margin-bottom: 0;
+}
+
+.video-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 1rem; 
+}
+
+video {
+  width: 60rem !important;
+  height: 40rem !important;
+}
+
