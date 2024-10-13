@@ -15,6 +15,9 @@ from io import BytesIO
 import time
 import queue
 from collections import Counter
+import re
+from datetime import datetime
+from itertools import combinations
 
 def limpar_arquivos_session():
     diretorio_session = 'flask_session'
@@ -35,8 +38,10 @@ def clean_db_files():
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.config['SECRET_KEY'] = 'sua_chave_secreta'
 app.config['SESSION_TYPE'] = 'filesystem'
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=30)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=120)
 Session(app)
+
+
 
 count = 0
 instances: Dict[int, ralib.RA] = {}
@@ -134,9 +139,7 @@ def reform_list(string, requisition):
 
     return relation_label, relations_tuples
 
-import re
-from datetime import datetime
-from itertools import combinations
+
 
 def reform_consult(string):
     pattern_labels = re.compile(r'\((.*?)\)')
