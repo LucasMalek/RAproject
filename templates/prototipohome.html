@@ -49,7 +49,6 @@
   </div>
   <div class="tutorial-container">
     <h1 class="tutorial-title">Tutorial de Utilização</h1>
-
      <!-- Seção 1: Criando o banco de dados -->
      <div class="tutorial-section">
       <h2 class="tutorial-section-title">1. Criando o banco de dados</h2>
@@ -1265,7 +1264,7 @@ function addOperatorInfo() {
            "Formato de condições aceitas:\n1. Atributo = valor\n2. Atributo1 = Valor1 or Atributo2 = Valor2\n" +
            "3. Atributo like 'A%' (correspondência de string)",
 
-      "Π": "Este operador representa a projeção, que retorna apenas os atributos especificados na condição da operação.\n\n" +
+      "π": "Este operador representa a projeção, que retorna apenas os atributos especificados na condição da operação.\n\n" +
            "Formato da operação: π {Atributos} (Relação)\n\nExemplo de uso: π {preço} (Produto).\n\n" +
            "Formato de condições aceitas: Atributo1, Atributo2...",
 
@@ -1284,7 +1283,7 @@ function addOperatorInfo() {
       "∩": "Este é o operador 'Intersecção'. R ∩ M retorna uma instância de relação contendo todas as tuplas que ocorrem em ambas R e M. As relações R e M devem ser compatíveis à união, e o esquema do resultado é definido de forma idêntica ao esquema de R.\n\n" +
            "Formato da operação: Relação1 ∩ Relação2\n\nExemplo de uso: Pessoa ∩ Cliente.",
 
-      "×": "Este é o operador 'Produto cartesiano'. R × M retorna uma instância de relação cujo esquema contém todos os campos de R (na mesma ordem em que eles aparecem em R) seguidos de todos os campos de M (na mesma ordem em que eles aparecem em M). O resultado de R X M contém uma tupla <r, s> (a concatenação das tuplas r e s) para cada par de tuplas r ∈ R, s ∈ M."
+      "x": "Este é o operador 'Produto cartesiano'. R × M retorna uma instância de relação cujo esquema contém todos os campos de R (na mesma ordem em que eles aparecem em R) seguidos de todos os campos de M (na mesma ordem em que eles aparecem em M). O resultado de R X M contém uma tupla <r, s> (a concatenação das tuplas r e s) para cada par de tuplas r ∈ R, s ∈ M."
        + "\n\n Formato da operação: Relação1 × Relação2\n\nExemplo de uso: Pessoa × Cliente.",
            
       "*": "Este é o operador 'Junção Natural'. A junção natural igualará automaticamente todos os pares de atributos com nomes idênticos a partir das tabelas, e a tabela resultante terá apenas um atributo de cada par.\n\n" +
@@ -1299,8 +1298,9 @@ function addOperatorInfo() {
 
   operatorButtons.forEach(button => {
       const operator = button.textContent.trim();
+      console.log(operator)
 
-      const operatorDescription = operatorInfo[operator] || 'Informação não disponível';
+      const operatorDescription = operatorInfo[operator] ||  operatorInfo["*"];
 
       const existingTooltip = document.querySelector('.tooltip');
       if (existingTooltip) {
@@ -1311,16 +1311,16 @@ function addOperatorInfo() {
           const tooltip = document.createElement('div');
           tooltip.className = 'tooltip';
 
-          // Converte quebras de linha \n para <br>
+         
           tooltip.innerHTML = operatorDescription.replace(/\n/g, '<br>');
 
           document.body.appendChild(tooltip);
 
           const buttonRect = button.getBoundingClientRect();
           tooltip.style.left = `${buttonRect.left}px`;
-          tooltip.style.top = `${buttonRect.bottom + window.scrollY + 10}px`; // 10px abaixo do botão
+          tooltip.style.top = `${buttonRect.bottom + window.scrollY + 10}px`; 
 
-          // Exibe a tooltip
+        
           tooltip.style.visibility = 'visible';
           tooltip.style.opacity = '1';
       });
@@ -1328,7 +1328,7 @@ function addOperatorInfo() {
       button.addEventListener('mouseleave', () => {
           const tooltip = document.querySelector('.tooltip');
           if (tooltip) {
-              tooltip.remove(); // Remove a tooltip ao sair do hover
+              tooltip.remove(); 
           }
       });
   });

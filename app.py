@@ -24,7 +24,6 @@ def limpar_arquivos_session():
     else:
         print("O diretório de sessão não existe.")
 
-
 def clean_db_files():
     files = glob.glob('*.db')
     for file in files:
@@ -32,7 +31,6 @@ def clean_db_files():
             os.remove(file)
         except OSError as e:
             print(e)
-
 
 app = Flask(__name__, static_folder='static', template_folder='templates')
 app.config['SECRET_KEY'] = 'sua_chave_secreta'
@@ -485,7 +483,6 @@ async def consult():
          print(session)
          return make_response(jsonify({'error': 'Você precisa definir o banco de dados primeiro!'}), 400)
 
-
 @app.route('/loadfile', methods=['GET', 'POST'])
 def loadfile(file=None):
     global count, instances
@@ -528,12 +525,10 @@ def loadfile(file=None):
     else:
         logout()
         return loadfile(request.files['file'])
-        
-        
+              
 @app.route('/prototipo', methods=['GET'])
 def prototipo():
     return render_template('prototipohome.html')
-
 
 @app.route('/colectinfofromtable', methods=['POST'])
 def colectinfofromtable():
@@ -561,7 +556,6 @@ def colectinfofromtable():
                 "types": types
             }
         return jsonify(info)
-
 
 @app.route('/insert', methods=['POST'])
 def insert():
